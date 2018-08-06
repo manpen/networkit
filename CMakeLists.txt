@@ -53,10 +53,10 @@ if (("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang") OR ("${CMAKE_CXX_COMPILER_ID}"
 
 elseif (MSVC)
 	set(NETWORKIT_CXX_FLAGS "${NETWORKIT_CXX_FLAGS} /DNETWORKIT_OMP2 /MP /DNETWORKIT_WINDOWS")
-	
+
 	# TTMath requires running an ASM for MSVC which we disable here at the cost of worse performance
 	set(NETWORKIT_CXX_FLAGS "${NETWORKIT_CXX_FLAGS} /DTTMATH_NOASM=1")
-	 
+
 else()
 	message(WARNING "NetworKit is only tests with GCC, Clang and MSVC. Your compiler may or may not work.")
 
@@ -87,6 +87,16 @@ endif()
 # specify linking flags for MacOS
 if (APPLE)
 	set(NETWORKIT_LINK_FLAGS "-undefined dynamic_lookup ${NETWORKIT_LINK_FLAGS}")
+endif()
+
+################################################################################
+# Use TLX as a CMake submodule
+if(EXISTS "${PROJECT_SOURCE_DIR}/extlibs/tlx/CMakeLists.txt")
+	add_subdirectory(extlibs/tlx)
+else()
+	message(FATAL_ERROR
+			"Missing TLX library in extlibs/tlx "
+			"Please run `git submodule update --init` to fetch the submodule.")
 endif()
 
 ################################################################################
@@ -161,6 +171,8 @@ function(networkit_add_module modname)
 			CXX_STANDARD ${NETWORKIT_CXX_STANDARD}
 			COMPILE_FLAGS "${NETWORKIT_CXX_FLAGS}"
 			LINK_FLAGS "${NETWORKIT_LINK_FLAGS}")
+
+		target_link_libraries(${MODULE_TARGET} PRIVATE tlx)
 
 		# All tests added to this module will will also become a dependency
 		# of networkit_tests_MODNAME. This target hence allows to build all
@@ -257,11 +269,12 @@ if (NETWORKIT_BUILD_TESTS)
 
 	if (NETWORKIT_MONOLITH)
 		add_executable(networkit_tests networkit/cpp/Unittests-X.cpp)
-		
+
 		target_link_libraries(networkit_tests
 			PRIVATE
 				gtest
 				networkit
+				tlx
 		)
 
 		set_target_properties(networkit_tests PROPERTIES
@@ -313,6 +326,7 @@ function(networkit_add_extra IS_TEST MOD NAME)
 					gtest_main gtest
 					PRIVATE
 					networkit_${MOD}
+					tlx
 					)
 			set_target_properties(${TARGET_NAME} PROPERTIES
 					CXX_STANDARD ${NETWORKIT_CXX_STANDARD}
@@ -365,6 +379,7 @@ if (NETWORKIT_BUILD_BENCHMARKS AND NETWORKIT_MONOLITH)
 			PRIVATE
 			benchmark_main benchmark
 			networkit
+			tlx
 			)
 
 	set_target_properties(networkit_tests PROPERTIES
@@ -393,7 +408,8 @@ function(networkit_add_gbenchmark MOD NAME)
 			target_link_libraries(${TARGET_NAME}
 				PRIVATE
 					benchmark_main benchmark
-					networkit_${MOD})
+					networkit_${MOD}
+					tlx)
 
 			set_target_properties(${TARGET_NAME} PROPERTIES
 					CXX_STANDARD ${NETWORKIT_CXX_STANDARD}
