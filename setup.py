@@ -4,6 +4,7 @@ import shutil
 import sys
 import sysconfig
 import os
+import hashlib
 
 cmakeCompiler = None
 buildDirectory = "build/build_python"
@@ -102,32 +103,67 @@ if cmakeCompiler is None:
 ################################################
 # functions for cythonizing and building networkit
 ################################################
+def getDigestOfSourceFile(filepath):
+	hash = hashlib.sha1()
+	with open(filepath, "r") as file:
+		for line in file:
+			hash.update(line.rstrip().encode('utf-8'))
+	return hash.hexdigest()
+
+def getCachedDigest(filepath):
+	try:
+		with open(filepath, "r") as file:
+			firstline = file.readline()
+		if firstline.startswith("// source digest:"):
+			return firstline.split(":")[1].strip()
+	except:
+		pass
+
+	return None
+
+def embedDigest(sourcePath, targetPath, digest):
+	with open(targetPath, "w") as out:
+		print("// source digest:", digest, file=out)
+		with open(sourcePath, "r") as infile:
+			for line in infile:
+				print(line, file=out)
+
 
 def cythonizeFile(filepath):
 	cpp_file = filepath.replace("pyx","cpp")
+	tmp_file = cpp_file + ".tmp"
 
+	if not os.path.isfile(filepath):
+		print("_NetworKit.pyx is not available. Build cancelled.")
+		exit(1)
+
+	# check whether file is cached and valid
+	srcDigest = getDigestOfSourceFile(filepath)
+	cppDigest = getCachedDigest(cpp_file)
+	if srcDigest == cppDigest:
+		print("Skip cythonizing as there exists a _NetworKit.pyx with valid checksum", flush=True)
+		return
+
+	elif cppDigest:
+		print("Digest mismatch. Source digest: %s, Cached: %s" % (srcDigest, cppDigest), flush=True)
+
+	# We need to cythonize; if the compiler is missing abort
 	cython_available = shutil.which("cython") is not None
 	if not cython_available:
-		if not os.path.isfile(cpp_file):
-			print("ERROR: Neither cython nor _NetworKit.cpp is provided. Build cancelled", flush=True)
-			exit(1)
+		print("ERROR: Cython not found. You can install it using `pip install cython`", flush=True)
+		exit(1)
 
-		else:
-			print("Cython not available, but _NetworKit.cpp provided. Continue build without cythonizing", flush=True)
+	print("Cythonizing _NetworKit.pyx...", flush=True)
+	comp_cmd = ["cython","-3","--cplus","-t",filepath,"-o",tmp_file]
+	if not subprocess.call(comp_cmd) == 0:
+		print("cython returned an error, exiting setup.py")
+		exit(1)
 
-	elif os.path.isfile(cpp_file) and os.path.getmtime(filepath) < os.path.getmtime(cpp_file):
-		print("Cython available; skip as _NetworKit.cpp was create after last modification of _NetworKit.pyx", flush=True)
+	print("_NetworKit.pyx cythonized", flush=True)
 
-	else:
-		print("Cythonizing _NetworKit.pyx...", flush=True)
-		if not os.path.isfile(filepath):
-			print("_NetworKit.pyx is not available. Build cancelled.")
-			exit(1)
-		comp_cmd = ["cython","-3","--cplus","-t",filepath]
-		if not subprocess.call(comp_cmd) == 0:
-			print("cython returned an error, exiting setup.py")
-			exit(1)
-		print("_NetworKit.pyx cythonized", flush=True)
+	embedDigest(tmp_file, cpp_file, srcDigest)
+	os.remove(tmp_file)
+
 
 def buildNetworKit(install_prefix, withTests = False):
 	# Cythonize file
