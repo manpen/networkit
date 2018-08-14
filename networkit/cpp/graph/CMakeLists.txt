@@ -1,4 +1,5 @@
 networkit_add_module(graph
+    FastGraphBuilder.cpp
     Graph.cpp
     GraphBuilder.cpp
     GraphTools.cpp

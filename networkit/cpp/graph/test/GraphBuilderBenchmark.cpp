@@ -7,9 +7,11 @@
  */
 
 #include <benchmark/benchmark.h>
-#include "../GraphBuilder.h"
-#include "../../io/METISGraphReader.h"
 #include "../../generators/ErdosRenyiEnumerator.h" // this is a header-only dependency
+
+#include "../GraphBuilder.h"
+#include "../FastGraphBuilder.h"
+
 
 namespace NetworKit {
 
@@ -102,5 +104,48 @@ BENCHMARK_DEFINE_F(GraphBuilderBenchmark, GraphBuilderParBuild)(benchmark::State
     state.SetItemsProcessed(num_edges);
 }
 BENCHMARK_REGISTER_F(GraphBuilderBenchmark, GraphBuilderParBuild)->Apply(GraphBuilderBenchmark::param_scan);
+
+BENCHMARK_DEFINE_F(GraphBuilderBenchmark, GraphBuilderFastBuilderUnweighted)(benchmark::State &state) {
+    auto ere = this->getEnumerator(state);
+
+    count num_edges = 0;
+    for (auto _ : state) {
+        // test unweighted gbp
+        FastGraphBuilder<false> builder(state.range(0), false, state.range(2));
+
+        num_edges += ere.forEdgesParallel([&](int tid, node u, node v) {
+            builder.addEdge(tid, u, v);
+        });
+
+        auto G = builder.toGraph();
+
+        std::cout << "\n\n\n";
+    }
+
+    state.SetItemsProcessed(num_edges);
+}
+BENCHMARK_REGISTER_F(GraphBuilderBenchmark, GraphBuilderFastBuilderUnweighted)->Apply(GraphBuilderBenchmark::param_scan);
+
+BENCHMARK_DEFINE_F(GraphBuilderBenchmark, GraphBuilderFastBuilderWeighted)(benchmark::State &state) {
+    auto ere = this->getEnumerator(state);
+
+    count num_edges = 0;
+    for (auto _ : state) {
+        // test unweighted gbp
+        FastGraphBuilder<false> builder(state.range(0), true, state.range(2));
+
+        num_edges += ere.forEdgesParallel([&](int tid, node u, node v) {
+            builder.addEdge(tid, u, v, 0.5);
+        });
+
+        auto G = builder.toGraph();
+
+        std::cout << "\n\n\n";
+    }
+
+    state.SetItemsProcessed(num_edges);
+}
+BENCHMARK_REGISTER_F(GraphBuilderBenchmark, GraphBuilderFastBuilderWeighted)->Apply(GraphBuilderBenchmark::param_scan);
+
 
 } // ! namespace NetworKit

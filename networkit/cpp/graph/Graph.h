@@ -81,6 +81,7 @@ namespace CurveballDetails {class CurveballMaterialization;}
  */
 class Graph final {
 
+	template <bool SupportWeight> friend class FastGraphBuilder; // forward declaration to graph/FastGraphBuilder.h
 	friend class ParallelPartitionCoarsening;
 	friend class GraphBuilder;
 	friend class CurveballDetails::CurveballMaterialization;
