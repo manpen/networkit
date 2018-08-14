@@ -1,4 +1,4 @@
-#include "FastGraphBuilderGTest.h"
+#include <gtest/gtest.h>
 
 #include "../FastGraphBuilder.h"
 #include "../Graph.h"
@@ -9,6 +9,9 @@
 #include <utility>
 
 namespace NetworKit {
+
+template <typename FGB>
+class FastGraphBuilderGTest: public testing::Test {};
 
 using BuilderTypesToTest = ::testing::Types<FastGraphBuilder<false>, FastGraphBuilder<true> >;
 TYPED_TEST_CASE(FastGraphBuilderGTest, BuilderTypesToTest);
