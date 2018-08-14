@@ -6,70 +6,101 @@
  *
  */
 
-#ifndef NOGTEST
-
-#include "GraphBuilderBenchmark.h"
+#include <benchmark/benchmark.h>
 #include "../GraphBuilder.h"
 #include "../../io/METISGraphReader.h"
 #include "../../generators/ErdosRenyiEnumerator.h" // this is a header-only dependency
 
 namespace NetworKit {
 
-constexpr node graphBuilderNodes = 200000;
-constexpr double graphBuilderProb = 0.0001;
+class GraphBuilderBenchmark : public ::benchmark::Fixture {
+public:
+	static void param_scan(benchmark::internal::Benchmark* b) {
+		for (int nodes = 1llu << 10; nodes <= 1llu << 18; nodes *= 16)
+			for (int degree = 1; degree <= 256; degree *= 16)
+				for (int directed = 0; directed <= 1; directed++)
+					b->Args({nodes, degree, directed});
+	}
 
-TEST_F(GraphBuilderBenchmark, benchmarkGraphBuilderBaseline) {
-	ErdosRenyiEnumerator<> ere(graphBuilderNodes, graphBuilderProb, false);
-	auto t1 = timeOnce([&]() {
-		ere.forEdgesParallel([&](int tid, node u, node v) {volatile auto tmp = u;});
-	});
+protected:
+	ErdosRenyiEnumerator<> getEnumerator(const benchmark::State &state) {
+		const node nNodes = state.range(0);
+		const edgeid nEdges = nNodes * state.range(1);
+		const bool directed = state.range(2);
+		const double prob = 1.0 * nEdges / (directed ? nNodes * nNodes : nNodes * (nNodes - 1) / 2);
+		return {nNodes, prob, directed};
+	}
+};
 
-	std::cout << "ErdosRenyi only:\t\t" << t1 << " ms\n";
-}
 
-TEST_F(GraphBuilderBenchmark, benchmarkGraphBuilderParFillSeqBuild) {
-	GraphBuilder builder(graphBuilderNodes);
-	count m_actual = 0;
-	ErdosRenyiEnumerator<> ere(graphBuilderNodes, graphBuilderProb, false);
-	auto t1 = timeOnce([&]() {
-		ere.forEdgesParallel([&](int tid, node u, node v) {
-			builder.addHalfEdge(u, v);
+BENCHMARK_DEFINE_F(GraphBuilderBenchmark, EnumeratorBaseline)(benchmark::State &state) {
+	auto ere = this->getEnumerator(state);
+
+	count num_edges = 0;
+	for (auto _ : state) {
+		num_edges += ere.forEdgesParallel([&](int tid, node u, node v) {
+			benchmark::DoNotOptimize(u);
+			benchmark::DoNotOptimize(v);
 		});
-	});
-	auto t2 = timeOnce([&]() {
-		auto G = builder.toGraph(true, false);
-		m_actual = G.numberOfEdges();
-	});
-	EXPECT_NEAR(m_actual, ere.expectedNumberOfEdges(), 0.1 * ere.expectedNumberOfEdges());
-	std::cout << "parallelForNodePairs + toGraphSequentiel:\t\t" << t1 << " + " << t2 << " = " << (t1 + t2) << " ms\n";
+	}
+
+	state.SetItemsProcessed(num_edges);
 }
 
-TEST_F(GraphBuilderBenchmark, benchmarkGraphBuilderParFillParBuild) {
-	GraphBuilder builder(graphBuilderNodes);
-	count m_actual = 0;
-	ErdosRenyiEnumerator<> ere(graphBuilderNodes, graphBuilderProb, false);
-	auto t1 = timeOnce([&]() {
-		ere.forEdgesParallel([&](int tid, node u, node v) {
-			builder.addHalfEdge(u, v);
-		});
-	});
-	auto t2 = timeOnce([&]() {
-		auto G = builder.toGraph(true, true);
-		m_actual = G.numberOfEdges();
-	});
-	EXPECT_NEAR(m_actual, ere.expectedNumberOfEdges(), 0.1 * ere.expectedNumberOfEdges());
-	std::cout << "parallelForNodePairs + toGraphParallel:\t\t" << t1 << " + " << t2 << " = " << (t1 + t2) << " ms\n";
+BENCHMARK_REGISTER_F(GraphBuilderBenchmark, EnumeratorBaseline)->Apply(GraphBuilderBenchmark::param_scan);
+
+BENCHMARK_DEFINE_F(GraphBuilderBenchmark, GraphBuilderParFillOnly)(benchmark::State &state) {
+    auto ere = this->getEnumerator(state);
+
+    count num_edges = 0;
+    for (auto _ : state) {
+        GraphBuilder builder(state.range(0));
+
+        num_edges += ere.forEdgesParallel([&](int tid, node u, node v) {
+            builder.addHalfEdge(u, v);
+        });
+
+        benchmark::DoNotOptimize(builder); // should be unnecessary, but let's be on the safe side
+    }
+
+    state.SetItemsProcessed(num_edges);
 }
+BENCHMARK_REGISTER_F(GraphBuilderBenchmark, GraphBuilderParFillOnly)->Apply(GraphBuilderBenchmark::param_scan);
 
+BENCHMARK_DEFINE_F(GraphBuilderBenchmark, GraphBuilderSeqBuild)(benchmark::State &state) {
+    auto ere = this->getEnumerator(state);
 
-TEST_F(GraphBuilderBenchmark, benchmarkMETISReader) {
-	METISGraphReader reader;
-	measureInMs([&]() {
-		auto G = reader.read("../algoDaten/graphs/eu-2005.graph");
-		return G.numberOfNodes();
-	}, 20);
+    count num_edges = 0;
+    for (auto _ : state) {
+        GraphBuilder builder(state.range(0));
+
+        num_edges += ere.forEdgesParallel([&](int tid, node u, node v) {
+            builder.addHalfEdge(u, v);
+        });
+
+        auto G = builder.toGraph(true, false);
+    }
+
+    state.SetItemsProcessed(num_edges);
 }
+BENCHMARK_REGISTER_F(GraphBuilderBenchmark, GraphBuilderSeqBuild)->Apply(GraphBuilderBenchmark::param_scan);
 
-} /* namespace NetworKit */
+BENCHMARK_DEFINE_F(GraphBuilderBenchmark, GraphBuilderParBuild)(benchmark::State &state) {
+    auto ere = this->getEnumerator(state);
 
-#endif /*NOGTEST */
+    count num_edges = 0;
+    for (auto _ : state) {
+        GraphBuilder builder(state.range(0));
+
+        num_edges += ere.forEdgesParallel([&](int tid, node u, node v) {
+            builder.addHalfEdge(u, v);
+        });
+
+        auto G = builder.toGraph(true, true);
+    }
+
+    state.SetItemsProcessed(num_edges);
+}
+BENCHMARK_REGISTER_F(GraphBuilderBenchmark, GraphBuilderParBuild)->Apply(GraphBuilderBenchmark::param_scan);
+
+} // ! namespace NetworKit
