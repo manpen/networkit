@@ -7,11 +7,13 @@ endif("${PROJECT_SOURCE_DIR}" STREQUAL "${PROJECT_BINARY_DIR}")
 
 # BUILD OPTIONS
 option(NETWORKIT_BUILD_TESTS "Build with tests" OFF)
+option(NETWORKIT_BUILD_BENCHMARKS "Build benchmarks (requires GooglBenchmark)" OFF)
 option(NETWORKIT_LOGGING "Build with logging support" ON)
 option(NETWORKIT_MONOLITH "Build single library (and tests is requested; required for shared lib)" ON)
 option(NETWORKIT_NATIVE "Optimize for native architecture (often better performance)" OFF)
 option(NETWORKIT_WARNINGS "Issue more warnings" OFF)
 option(NETWORKIT_INCLUDESYMLINK "Create symlink to cpp directory" ON)
+
 set(NETWORKIT_PYTHON "" CACHE STRING "Directory containing Python.h. Implies MONOLITH=TRUE")
 set(NETWORKIT_PYTHON_SOABI "" CACHE STRING "Platform specific file extension. Implies MONOLITH=TRUE")
 
@@ -30,6 +32,7 @@ if (NOT CMAKE_BUILD_TYPE)
 	message("Use Release Build Type as default")
 	set(CMAKE_BUILD_TYPE "Release")
 endif()
+
 
 ################################################################################
 # Compilation Flags
@@ -208,10 +211,8 @@ function(networkit_module_link_modules modname)
 endfunction()
 
 ################################################################################
-# TESTING and BENCHMARKING
-if (NETWORKIT_BUILD_TESTS)
-	enable_testing()
-
+# TESTING and BENCHMARKING DEPENDENCIES
+if (NETWORKIT_BUILD_TESTS OR NETWORKIT_BUILD_BENCHMARKS)
 	if(EXISTS "${PROJECT_SOURCE_DIR}/extlibs/googletest/CMakeLists.txt")
 		if (MSVC)
 			# While by default MSVC projects link against the shared runtime library
@@ -221,12 +222,38 @@ if (NETWORKIT_BUILD_TESTS)
 		endif()
 		option(BUILD_GTEST "Builds the googletest subproject" ON)
 		option(BUILD_GMOCK "Builds the googlemock subproject" OFF)
+		message("Addding GoogleTest from extlibs/googletest. Messages:")
 		add_subdirectory(extlibs/googletest)
+		message("End of Messages from GoogleTest")
 	else()
 		message(FATAL_ERROR
 			"Missing GoogleTest and GoogleMock in extlibs/googletest. "
 			"Please run `git submodule update --init` to fetch the submodule.")
 	endif()
+endif()
+
+if (NETWORKIT_BUILD_BENCHMARKS)
+	if(EXISTS "${PROJECT_SOURCE_DIR}/extlibs/googlebenchmark/CMakeLists.txt")
+		option(BENCHMARK_ENABLE_TESTING "see lib" OFF)
+		option(BENCHMARK_ENABLE_INSTALL "see lib" OFF)
+		message("Addding GoogleBenchmark from extlibs/googlebenchmark. Messages:")
+		add_subdirectory(extlibs/googlebenchmark)
+		message("End of Messages from GoogleBenchmark")
+	else()
+		message(FATAL_ERROR
+				"Missing GoogleBenchmark in extlibs/googlebenchmark. "
+				"Please run `git submodule update --init` to fetch the submodule.")
+	endif()
+endif()
+
+################################################################################
+# TESTING
+
+# In case of monolithic builds we add the target networkit_tests, and later add
+# source files via networkit_add_test. In case of non-monolithic builds, each
+# networkit_add_test creates it own target.
+if (NETWORKIT_BUILD_TESTS)
+	enable_testing()
 
 	if (NETWORKIT_MONOLITH)
 		add_executable(networkit_tests networkit/cpp/Unittests-X.cpp)
@@ -257,6 +284,7 @@ if (NETWORKIT_BUILD_TESTS)
 	endif()
 endif()
 
+
 # internal use only
 # IS_TEST   indicates whether add_test should be invoked for executable
 #		   an whether it should be assigned to the module's test target
@@ -281,15 +309,15 @@ function(networkit_add_extra IS_TEST MOD NAME)
 			add_executable(${TARGET_NAME} ${TEST_SOURCE})
 
 			target_link_libraries(${TARGET_NAME}
-				PRIVATE
+					PRIVATE
 					gtest_main gtest
-				PRIVATE
+					PRIVATE
 					networkit_${MOD}
-				)
+					)
 			set_target_properties(${TARGET_NAME} PROPERTIES
-				CXX_STANDARD ${NETWORKIT_CXX_STANDARD}
-				COMPILE_FLAGS "${NETWORKIT_CXX_FLAGS}"
-				LINK_FLAGS "${NETWORKIT_LINK_FLAGS}")
+					CXX_STANDARD ${NETWORKIT_CXX_STANDARD}
+					COMPILE_FLAGS "${NETWORKIT_CXX_FLAGS}"
+					LINK_FLAGS "${NETWORKIT_LINK_FLAGS}")
 
 			foreach(dep IN LISTS ARGN)
 				target_link_libraries(${TARGET_NAME} PRIVATE networkit_${dep})
@@ -298,10 +326,10 @@ function(networkit_add_extra IS_TEST MOD NAME)
 			if (${IS_TEST})
 				add_dependencies(networkit_tests_${MOD} ${TARGET_NAME} )
 				add_test(
-					NAME "${MOD}/${NAME}"
-					COMMAND ${TARGET_NAME}
-					WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
-					)
+						NAME "${MOD}/${NAME}"
+						COMMAND ${TARGET_NAME}
+						WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
+				)
 			endif()
 		endif()
 	endif()
@@ -316,10 +344,68 @@ function(networkit_add_test MOD NAME)
 endfunction(networkit_add_test)
 
 # Wrapper for networkit_add_extra with (IS_TEST=OFF)
+# This is a legacy function which has been replaced by
+# networkit_add_gbenchmark (linking against GoogleBenchmark).
+# DO NOT USE networkit_add_benchmark FOR NEW DEVELOPMENTS!
 function(networkit_add_benchmark MOD NAME)
 	networkit_add_extra(OFF ${MOD} ${NAME} ${ARGN})
 endfunction(networkit_add_benchmark)
 
+
+################################################################################
+# Benchmarks
+
+# In case of monolithic builds we add the target networkit_benchmarks, and later add
+# source files via networkit_add_gbenchmark. In case of non-monolithic builds, each
+# networkit_add_test creates it own target.
+if (NETWORKIT_BUILD_BENCHMARKS AND NETWORKIT_MONOLITH)
+	add_executable(networkit_benchmarks networkit/cpp/networkit.cpp)
+
+	target_link_libraries(networkit_benchmarks
+			PRIVATE
+			benchmark_main benchmark
+			networkit
+			)
+
+	set_target_properties(networkit_tests PROPERTIES
+			CXX_STANDARD ${NETWORKIT_CXX_STANDARD}
+			COMPILE_FLAGS "${NETWORKIT_CXX_FLAGS}"
+			LINK_FLAGS "${NETWORKIT_LINK_FLAGS}")
+endif()
+
+function(networkit_add_gbenchmark MOD NAME)
+	if (NETWORKIT_BUILD_BENCHMARKS)
+		set(BENCH_SOURCE ${CMAKE_CURRENT_LIST_DIR}/${NAME}.cpp)
+
+		if (NETWORKIT_MONOLITH)
+			target_sources(networkit_benchmarks PRIVATE ${BENCH_SOURCE})
+
+		else()
+			if (NOT TARGET networkit_${MOD})
+				MESSAGE(FATAL_ERROR "Unknown NetworKit module '${MOD}'")
+			endif()
+
+			set(TARGET_NAME "networkit_${MOD}_${NAME}")
+
+			add_executable(${TARGET_NAME} ${BENCH_SOURCE})
+			message("${TARGET_NAME}: ${BENCH_SOURCE}")
+
+			target_link_libraries(${TARGET_NAME}
+				PRIVATE
+					benchmark_main benchmark
+					networkit_${MOD})
+
+			set_target_properties(${TARGET_NAME} PROPERTIES
+					CXX_STANDARD ${NETWORKIT_CXX_STANDARD}
+					COMPILE_FLAGS "${NETWORKIT_CXX_FLAGS}"
+					LINK_FLAGS "${NETWORKIT_LINK_FLAGS}")
+
+			foreach(dep IN LISTS ARGN)
+				target_link_libraries(${TARGET_NAME} PRIVATE networkit_${dep})
+			endforeach()
+		endif()
+	endif()
+endfunction(networkit_add_gbenchmark)
 
 ################################################################################
 # Subdirectories
