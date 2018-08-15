@@ -1,7 +1,9 @@
 #include <omp.h>
-#include <vector>
-#include <deque>
 #include <atomic>
+#include <iterator>
+#include <memory>
+#include <mutex>
+#include <vector>
 
 #include "Graph.h"
 #include "../Globals.h"
@@ -9,6 +11,33 @@
 namespace NetworKit {
 namespace FastGraphBuilderDetails {
     template<bool WithWeights> class Message; // forward declaration (see at the end of this file)
+
+    template <typename T, size_t BlockSize>
+    class Block {
+    public:
+        static constexpr size_t block_size = BlockSize;
+
+        Block() {bufferEnd = &buffer[0];}
+
+        T* begin() {return &buffer[0];}
+        T* end() {return bufferEnd;}
+        const T* begin() const {return &buffer[0];}
+        const T* end() const {return bufferEnd;}
+
+        size_t size() const {return std::distance(&buffer[0], const_cast<const T*>(bufferEnd));}
+        bool empty() const {return buffer == bufferEnd;}
+        bool full() const {return size() == block_size;}
+
+        template <typename ... Args>
+        void emplace_back(Args... args) {
+            new (bufferEnd) T(std::forward<Args>(args)...);
+            bufferEnd++;
+        }
+
+    private:
+        T buffer[block_size];
+        T* bufferEnd;
+    };
 }
 
 
@@ -24,7 +53,10 @@ public:
           n(n),
           weighted(weighted),
           directed(directed)
-    {}
+    {
+        for(size_t tid=0; tid != insertionBuffers.size(); tid++)
+            insertionBuffers[tid].reset(new block_type);
+    }
 
     // not copyable
     FastGraphBuilder(const FastGraphBuilder&) = delete;
@@ -51,10 +83,21 @@ public:
      */
     void addEdge(int tid, node u, node v, edgeweight weight = 1.0) {
         assert(tid < static_cast<int>(insertionBuffers.size()));
+        assert(insertionBuffers[tid]);
         assert(u < n);
         assert(v < n);
 
-        insertionBuffers[tid].emplace_back(u, v, false, weight);
+        auto& buffer = insertionBuffers[tid];
+        buffer->emplace_back(u, v, false, weight);
+
+        if (buffer->full()) {
+            {
+                std::unique_lock<std::mutex> lock(filledBlocksMutex);
+                filledBlocks.emplace_back(std::move(buffer));
+            }
+
+            buffer.reset(new block_type);
+        }
     }
 
     /**
@@ -68,7 +111,12 @@ public:
 private:
 // Insertion Buffers
     using message_type = FastGraphBuilderDetails::Message<SupportWeight>;
-    std::vector< std::deque<message_type> > insertionBuffers;
+    using block_type = FastGraphBuilderDetails::Block<message_type, 1024*1024>;
+    std::vector< std::unique_ptr<block_type> > insertionBuffers;
+
+    std::mutex filledBlocksMutex;
+    std::list< std::unique_ptr<block_type> > filledBlocks;
+
     std::vector< message_type > messages;
 
     void consolidateBuffers();
