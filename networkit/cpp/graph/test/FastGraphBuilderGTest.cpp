@@ -45,7 +45,7 @@ TYPED_TEST(FastGraphBuilderGTest, UndirectedClique) {
         }
     });
 
-    ASSERT_EQ(count, 2 * G.numberOfEdges());
+    ASSERT_EQ(count, G.numberOfEdges());
 }
 
 TYPED_TEST(FastGraphBuilderGTest, UndirectedErdosReyni) {

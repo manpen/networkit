@@ -109,7 +109,7 @@ class Message<false> : public MessageBase {
 public:
     Message() {}
     Message(node tail, node head, bool flag, edgeweight = 1.0) : MessageBase(tail, head, flag) {}
-    edgeweight weight() const { return {1.0}; };
+    edgeweight weight() const { return 1.0; };
 };
 
 template<>

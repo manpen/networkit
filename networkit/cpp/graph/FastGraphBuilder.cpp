@@ -14,41 +14,59 @@ void FastGraphBuilder<SupportWeights>::consolidateBuffers() {
     if (!messages.empty()) {
         #ifndef NDEBUG
         for(const auto& buf : insertionBuffers)
-            assert(buf.empty());
+            assert(buf->empty());
+        assert(filledBlocks.empty());
         #endif
 
         return;
     }
 
+    for(auto& buf : insertionBuffers) {
+        if (buf->empty()) {
+            buf.reset();
+            continue;
+        }
+
+        filledBlocks.emplace_back(std::move(buf));
+    }
+
     std::vector<size_t> begins;
-    begins.reserve(insertionBuffers.size());
+    begins.reserve(filledBlocks.size());
 
     size_t size = 0;
-    for(const auto& buf : insertionBuffers) {
+    for(const auto& buf : filledBlocks) {
         begins.push_back(size);
-        size += buf.size();
+        size += buf->size();
     }
     assert(size > 0);
 
     // copy partial insertion buffers into single large vector
     messages.resize(2*size);
 
-    count num_selfloops = 0;
-    #pragma omp parallel for reduction(+:num_selfloops)
-    for(omp_index i=0; i<insertionBuffers.size(); i++) {
-        if (insertionBuffers[i].empty())
-            continue;
+    std::atomic<size_t> block_idx{0};
+    #pragma omp parallel
+    {
+        while(true) {
+            std::unique_ptr<block_type> block;
+            size_t idx;
+            {
+                std::unique_lock<std::mutex> lock(filledBlocksMutex);
+                if (filledBlocks.empty())
+                    break;
 
-        auto writer = &messages[2*begins[i]];
-        for(const auto& msg : insertionBuffers[i]) {
-            *(writer++) = msg;
-            //add a mirrored copy
-            *(writer++) = message_type(msg.head(), msg.tail(), true, msg.weight());
-            num_selfloops += (msg.head() == msg.tail());
+                block = std::move(filledBlocks.front());
+                filledBlocks.pop_front();
+                idx = block_idx++;
+            }
+
+            auto writer = &messages[2*begins[idx]];
+            for(const auto& msg : *block) {
+                *(writer++) = msg;
+                //add a mirrored copy
+                *(writer++) = message_type(msg.head(), msg.tail(), true, msg.weight());
+            }
         }
     }
-
-    insertionBuffers.clear();
 }
 
 namespace FastGraphBuilderDetails {
@@ -107,7 +125,7 @@ Graph FastGraphBuilder<SupportWeights>::toGraph() {
         FastGraphBuilderDetails::foreachNodeParallel<>(messages, [&](citer begin, citer end) {
             const size_t ideg = std::count_if(begin, end, [] (const message_type& m) {return m.flag();} );
             const size_t odeg = std::distance(begin, end) - ideg;
-            const node u = begin->head();
+            const node u = begin->tail();
 
             G.inDeg[u] = ideg;
             auto &inEdges = G.inEdges[u];
@@ -126,11 +144,11 @@ Graph FastGraphBuilder<SupportWeights>::toGraph() {
 
             for (auto it = begin; it != end; ++it) {
                 if (it->flag()) {
-                    inEdges.push_back(it->tail());
+                    inEdges.push_back(it->head());
                     if (SupportWeights && weighted)
                         inWeights.push_back(it->weight());
                 } else {
-                    outEdges.push_back(it->tail());
+                    outEdges.push_back(it->head());
                     if (SupportWeights && weighted)
                         outWeights.push_back(it->weight());
                 }
