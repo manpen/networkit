@@ -99,7 +99,7 @@ public:
         }
         #endif
 
-        // perform the first round as MSB radix sort which will yield indendent
+        // perform the first round as MSB radix sort which will yield independent
         // chunks which then can be sorted pleasingly parallel. We add some padding
         // to thread_counter to avoid false sharing
         std::vector< std::array<size_t, no_queues + 64 / sizeof(size_t)> >
@@ -213,7 +213,7 @@ public:
             }
         }
 
-        return true;// !lsb_remaining_width || !(no_iters % 2);
+        return !lsb_remaining_width || !(no_iters % 2);
     }
 
 private:
