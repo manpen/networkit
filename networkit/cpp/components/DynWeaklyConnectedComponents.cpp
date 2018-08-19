@@ -11,7 +11,7 @@ namespace NetworKit {
 
     DynWeaklyConnectedComponents::DynWeaklyConnectedComponents(const Graph& G) : G(G) {
         if (!G.isDirected()) {
-            throw std::runtime_error("Weakly Connected Components can be computeed for directed graphs. Use ConnectedComponents for undirected graphs.");
+            throw std::runtime_error("Weakly Connected Components can be computed for directed graphs. Use ConnectedComponents for undirected graphs.");
         }
     }
 
