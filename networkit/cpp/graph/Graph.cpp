@@ -536,7 +536,7 @@ void Graph::restoreNode(node v){
 edgeweight Graph::weightedDegree(node v) const {
 	if (weighted) {
 		edgeweight sum = 0.0;
-		forNeighborsOf(v, [&](node u, edgeweight ew) {
+		forNeighborsOf(v, [&](node /*u*/, edgeweight ew) {
 			sum += ew;
 		});
 		return sum;
@@ -699,7 +699,7 @@ void Graph::removeEdge(node u, node v) {
 }
 
 void Graph::removeSelfLoops() {
-	this->forEdges([&](node u, node v, edgeweight ew) {
+	this->forEdges([&](node u, node v) {
 		if (u == v) {
 			removeEdge(u, v);
 		}
@@ -872,7 +872,7 @@ void Graph::increaseWeight(node u, node v, edgeweight ew) {
 edgeweight Graph::totalEdgeWeight() const {
 	if (weighted) {
 		edgeweight sum = 0.0;
-		forEdges([&](node u, node v, edgeweight ew) {
+		forEdges([&](node /*u*/, node /*v*/, edgeweight ew) {
 			sum += ew;
 		});
 		return sum;

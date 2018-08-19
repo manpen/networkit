@@ -189,8 +189,8 @@ std::set<node> expandseed_internal(const Graph&G, node s) {
 	 * objective function M
 	 * @return quality difference for the move of v to C
 	 */
-	auto deltaM = [&](node, double degInt, double degExt, const std::set<node>& C){
-		double delta = (intWeight + degInt) / (double) (extWeight - degInt + degExt);
+	auto deltaM = [&](node, double degInt, double degExt, const std::set<node>& /*C*/){
+		double delta = (intWeight + degInt) / static_cast<double>(extWeight - degInt + degExt);
 		return delta - currentQ;
 	};
 

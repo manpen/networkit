@@ -23,7 +23,7 @@ MultilevelLayouter::MultilevelLayouter(Point<float> bottomLeft, Point<float> top
 
 }
 
-void MultilevelLayouter::prolongCoordinates(Graph& Gcon, Graph& G) {
+void MultilevelLayouter::prolongCoordinates(Graph& /*Gcon*/, Graph& /*G*/) {
 
 }
 

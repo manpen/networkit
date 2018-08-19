@@ -82,8 +82,7 @@ private:
 	node u;
 	node v;
 	count diameter = 0;
-	const edgeweight infDist = std::numeric_limits<edgeweight>::max();
-	const edgeweight epsilon = 0.0000000001; //make sure that no legitimate edge weight is below that.
+	static constexpr edgeweight infDist = std::numeric_limits<edgeweight>::max();
 	count visitedPairs = 0;
 	std::vector<std::vector<edgeweight>> distances;
 	std::vector<std::vector<edgeweight>> distancesOld;

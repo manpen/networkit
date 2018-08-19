@@ -91,7 +91,7 @@ void DynBetweennessOneNode::update(GraphEvent event) {
 		// queue with all visited nodes
 		// if u has a new shortest path going through v, it updates the distance of u
 		// and inserts u in the priority queue (or updates its priority, if already in Q)
-		auto updateQueue = [&](node u, edgeweight priority) {
+		auto updateQueue = [&](node u, edgeweight /*priority*/) {
 			if (!enqueued[u]) {
 				Q.push(u);
 				enqueued[u] = true;
@@ -119,7 +119,7 @@ void DynBetweennessOneNode::update(GraphEvent event) {
 			node s = bfsQ.front();
 			bfsQ.pop();
 			DEBUG("Dequeueing node ", s);
-			G.forInNeighborsOf(s, [&](node w, edgeweight weightws) { // identify and process neighbors w of s
+			G.forInNeighborsOf(s, [&](node w) { // identify and process neighbors w of s
 				if (visited[w] == false && distances[w][v] >= distances[w][u] + weightuv) {
 					bfsQ.push(w);
 					DEBUG("Pushing neighbor ", w);

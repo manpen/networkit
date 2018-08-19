@@ -19,7 +19,7 @@ std::vector<RankedNeighbors> SimmelianScore::getRankedNeighborhood(const Graph& 
 
 	g.forNodes([&](node u) {
 		//Sort ego's alters from strongly to weakly tied.
-		g.forNeighborsOf(u, [&](node _u, node v, edgeid eid) {
+		g.forNeighborsOf(u, [&](node /*_u*/, node v, edgeid eid) {
 			count triangleCount = round(triangles[eid]);
 			neighbors[u].push_back(RankedEdge(u, v, triangleCount));
 		});
@@ -100,11 +100,11 @@ void SimmelianScore::matchNeighbors(
 	}
 }
 
-double SimmelianScore::score(node u, node v) {
+double SimmelianScore::score(node, node) {
 	throw std::runtime_error("Not implemented: Use scores() instead.");
 }
 
-double SimmelianScore::score(edgeid eid) {
+double SimmelianScore::score(edgeid) {
 	throw std::runtime_error("Not implemented: Use scores() instead.");
 }
 

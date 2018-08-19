@@ -70,7 +70,7 @@ TEST(AlgebraicSpanningEdgeCentralityGTest, benchmarkSpanning) {
 		INFO("algebraic spanning edge centrality ranking time: ", timer.elapsedTag());
 
 		double error = 0.0;
-		G.forEdges([&](node u, node v, edgeid e) {
+		G.forEdges([&](node /*u*/, node /*v*/, edgeid e) {
 			double relError = fabs(asp.score(e) - exact.score(e));
 			if (fabs(exact.score(e)) > 1e-9) relError /= exact.score(e);
 			error += relError;
@@ -87,7 +87,7 @@ TEST(AlgebraicSpanningEdgeCentralityGTest, benchmarkSpanning) {
 
 
 		error = 0.0;
-		G.forEdges([&](node u, node v, edgeid e) {
+		G.forEdges([&](node /*u*/, node /*v*/, edgeid e) {
 			double relError = fabs(sp.score(e) - exact.score(e));
 			if (fabs(exact.score(e)) > 1e-9) relError /= exact.score(e);
 			error += relError;

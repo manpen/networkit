@@ -66,7 +66,7 @@ Vector DynamicMatrix::row(const index i) const {
 	assert(i >= 0 && i < nRows);
 
 	Vector row(numberOfColumns(), zero, true);
-	graph.forEdgesOf(i, [&](node i, node j, double value) {
+	graph.forEdgesOf(i, [&](node /*i*/, node j, double value) {
 		row[j] = value;
 	});
 

@@ -47,7 +47,7 @@ void NetworKit::KruskalMSF::run() {
 
 		// sort edges in decreasing weight order
 		std::vector<MyEdge> sortedEdges; // (m);
-		G.forEdges([&](node u, node v, edgeweight ew, edgeid eid) {
+		G.forEdges([&](node u, node v, edgeweight ew, edgeid /*eid*/) {
 //			INFO("insert edge (", u, ", ", v, ") with weight ", ew);
 			MyEdge myEdge(u, v, ew);
 			sortedEdges.push_back(myEdge);

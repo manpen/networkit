@@ -59,8 +59,7 @@ public:
 
 private:
 
-	const edgeweight infDist = std::numeric_limits<edgeweight>::max();
-	const edgeweight epsilon = 0.0000000001; //make sure that no legitimate edge weight is below that.
+	static constexpr edgeweight infDist = std::numeric_limits<edgeweight>::max();
 	count visitedPairs = 0;
 };
 

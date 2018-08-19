@@ -1075,7 +1075,7 @@ public:
 	 * of r has been visited.
 	 *
 	 * @param r Node.
-	 * @param handle Takes parameter <code>(node)</code>.
+	 * @param handle Takes parameter <code>(node)</code> or <code>(node, dist)</code>
 	 */
 	template<typename L> void BFSfrom(node r, L handle) const;
 	template<typename L> void BFSfrom(const std::vector<node> &startNodes, L handle) const;
@@ -1551,7 +1551,7 @@ void Graph::BFSEdgesFrom(node r, L handle) const {
 		// apply function
 		forNeighborsOf(u, [&](node, node v, edgeweight w, edgeid eid) {
 			if (!marked[v]) {
-				handle(u, v, w, eid);
+				edgeLambda<L>(handle, u, v, w, eid);
 				q.push(v);
 				marked[v] = true;
 			}
@@ -1589,17 +1589,15 @@ void Graph::DFSEdgesFrom(node r, L handle) const {
 		node u = s.top();
 		s.pop();
 		// apply function
-		forNeighborsOf(u, [&](node v) {
+		forNeighborsOf(u, [&](node /*u*/, node v, edgeweight w, edgeid eid) {
 			if (!marked[v]) {
-				handle(u, v);
+				edgeLambda<L>(handle, u, v, w, eid);
 				s.push(v);
 				marked[v] = true;
 			}
 		});
 	} while (!s.empty());
 }
-
-
 
 
 } /* namespace NetworKit */

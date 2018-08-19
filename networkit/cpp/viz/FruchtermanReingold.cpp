@@ -81,8 +81,8 @@ void FruchtermanReingold::draw(Graph& g) {
 	//////////////////////////////////////////////////////////
 	// Cooling schedule
 	//////////////////////////////////////////////////////////
-	auto updateStepLength([&](std::vector<Point<float> >& oldLayout,
-			std::vector<Point<float> >& newLayout) {
+	auto updateStepLength([&](std::vector<Point<float> >& /*oldLayout*/,
+			std::vector<Point<float> >& /*newLayout*/) {
 		step += 0.1; // TODO: externalize
 		return 1.0 / step;
 	});

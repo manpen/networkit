@@ -141,7 +141,7 @@ namespace NetworKit {
 
 
     void DynWeaklyConnectedComponents::updateBatch(
-        const std::vector<GraphEvent>& batch
+        const std::vector<GraphEvent>&
     ) {
         run();
     }
@@ -328,7 +328,7 @@ namespace NetworKit {
         node u,
         node s,
         node w,
-        node v,
+        node /*v*/,
         count d,
         std::queue<node>& q,
         bool& nextEdgeFound,

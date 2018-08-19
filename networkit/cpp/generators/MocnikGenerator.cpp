@@ -16,10 +16,7 @@ MocnikGenerator::MocnikGenerator(count dim, count n, double k, bool weighted): d
 	ks.push_back(k);
 }
 
-MocnikGenerator::MocnikGenerator(count dim, std::vector<count> ns, double k, bool weighted): dim(dim), ns(ns), weighted(weighted) {
-	for (auto &n : ns) {
-		ks.push_back(k);
-	}
+MocnikGenerator::MocnikGenerator(count dim, std::vector<count> ns, double k, bool weighted): dim(dim), ns(ns), ks(ns.size(), k), weighted(weighted) {
 }
 
 MocnikGenerator::MocnikGenerator(count dim, std::vector<count> ns, std::vector<double> ks, bool weighted): dim(dim), ns(ns), ks(ks), weighted(weighted) {
@@ -30,10 +27,7 @@ MocnikGenerator::MocnikGenerator(count dim, count n, double k, std::vector<doubl
 	ks.push_back(k);
 }
 
-MocnikGenerator::MocnikGenerator(count dim, std::vector<count> ns, double k, std::vector<double> weighted): dim(dim), ns(ns), weighted(true), relativeWeights(weighted) {
-	for (auto &n : ns) {
-		ks.push_back(k);
-	}
+MocnikGenerator::MocnikGenerator(count dim, std::vector<count> ns, double k, std::vector<double> weighted): dim(dim), ns(ns), ks(ns.size(), k), weighted(true), relativeWeights(weighted) {
 }
 
 MocnikGenerator::MocnikGenerator(count dim, std::vector<count> ns, std::vector<double> ks, std::vector<double> weighted): dim(dim), ns(ns), ks(ks), weighted(true), relativeWeights(weighted) {
@@ -289,22 +283,22 @@ void MocnikGenerator::addEdgesToGraph(Graph &G, const count &n, const double &k,
 Graph MocnikGenerator::generate() {
 	// create relative weights
 	if (relativeWeights.empty()) {
-		for (auto &n : ns) {
-			relativeWeights.push_back(1);
-		}
+		relativeWeights.resize(ns.size(), 1.0);
 	}
 
 	// assertions
+	#ifndef NDEBUG // avoid warnings about unused variables
 	assert(dim > 0);
-	for (auto &n : ns) {
+	for (auto n : ns) {
 		assert(n > 1);
 	}
-	for (auto &k : ks) {
+	for (auto k : ks) {
 		assert(k > 1);
 	}
 	assert(ns.size() > 0);
 	assert(ks.size() == ns.size());
 	assert(relativeWeights.size() == ns.size());
+	#endif
 
 	// create graph
 	Graph G(0, weighted, true);
