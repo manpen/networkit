@@ -60,7 +60,9 @@ std::vector<double> Volume::volume(const Graph &G, const std::vector<double> rs,
 			i++;
 		}
 	}
+
 	std::vector<double> ys;
+	ys.reserve(xs.size());
 	for (auto &x : xs) {
 		ys.push_back(x / samples);
 	}

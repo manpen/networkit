@@ -74,7 +74,10 @@ static inline double dist(std::vector<double> &v, std::vector<double> &w) {
 
 void MocnikGenerator::initCellArray(MocnikGenerator::LayerState &s, const count &numberOfCellsPerDimension) {
 	s.aMax = numberOfCellsPerDimension;
-	for (count j = 0; j < std::pow(s.aMax, dim); j++) {
+    const count size = std::pow(s.aMax, dim); // FIXME: This uses floating point
+    s.a.reserve(s.a.size() + size);
+
+	for (count j = 0; j < size; j++) {
 		NodeCollection tmp;
 		s.a.push_back(tmp);
 	}
@@ -119,8 +122,7 @@ std::vector<int> MocnikGenerator::fromIndex(MocnikGenerator::LayerState &s, cons
 std::vector<int> MocnikGenerator::boxSurface(MocnikGenerator::LayerState &s, const int &i, const int &r) {
 	// test for vanishing r
 	if (r == 0) {
-		std::vector<int> seResult;
-		seResult.push_back(i);
+		std::vector<int> seResult {i};
 		return seResult;
 	}
 	// find all boxes
@@ -307,7 +309,8 @@ Graph MocnikGenerator::generate() {
 	// create the nodes
 	node curr = 0;
 	while (curr < *std::max_element(ns.begin(), ns.end())) {
-		std::vector<double> v = {};
+		std::vector<double> v;
+		v.reserve(dim);
 		for (count j = 0; j < dim; j++) {
 			v.push_back(Aux::Random::real());
 		}
