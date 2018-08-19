@@ -62,33 +62,33 @@ private:
 	/**
 	 * Add the node with number j to the corresponing grid cell
 	 */
-	const void addNode(LayerState &s, const int &j);
+	void addNode(LayerState &s, const int &j);
 
 	/**
 	 * Determine, for a given position, the index of the corresponding grid cell
 	 */
-	const int toIndex(LayerState &s, const std::vector<double> &v);
+	int toIndex(LayerState &s, const std::vector<double> &v);
 
 	/**
 	 * Determine, for the given multi-dimensional index, the index of the
 	 * corresponding grid cell
 	 */
-	const int toIndex(LayerState &s, const std::vector<int> &v);
+	int toIndex(LayerState &s, const std::vector<int> &v);
 
 	/**
 	 * Determine, for a given index, the multi-dimensional index of a grid cell
 	 */
-	const std::vector<int> fromIndex(LayerState &s, const int &i);
+	std::vector<int> fromIndex(LayerState &s, const int &i);
 
 	/**
 	 * Determine for a grid cell given by index i the grid cells of distance r
 	 */
-	const std::vector<int> boxSurface(LayerState &s, const int &i, const int &r);
+	std::vector<int> boxSurface(LayerState &s, const int &i, const int &r);
 
 	/**
 	 * Determine for a grid cell given by index i the grid cells within distance r
 	 */
-	const std::vector<int> boxVolume(LayerState &s, const int &j, const double &r);
+	std::vector<int> boxVolume(LayerState &s, const int &j, const double &r);
 
 	// EDGE GENERATION
 

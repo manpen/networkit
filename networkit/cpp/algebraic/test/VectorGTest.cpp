@@ -218,7 +218,7 @@ TEST(VectorGTest, testVectorIterators) {
 
 	v.forElements(constantTester);
 
-	auto constantParallelTester = [&](const int &idx, const double &element) {
+	auto constantParallelTester = [&](int idx, double element) {
 		EXPECT_EQ(v[idx], element);
 	};
 	v.parallelForElements(constantParallelTester);

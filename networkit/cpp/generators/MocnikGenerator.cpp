@@ -84,11 +84,11 @@ MocnikGenerator::NodeCollection MocnikGenerator::getNodes(MocnikGenerator::Layer
 	return s.a[i];
 }
 
-const void MocnikGenerator::addNode(MocnikGenerator::LayerState &s, const int &j) {
+void MocnikGenerator::addNode(MocnikGenerator::LayerState &s, const int &j) {
 	s.a[toIndex(s, nodePositions[j])].push_back(j);
 }
 
-const int MocnikGenerator::toIndex(MocnikGenerator::LayerState &s, const std::vector<double> &v) {
+int MocnikGenerator::toIndex(MocnikGenerator::LayerState &s, const std::vector<double> &v) {
 	std::vector<int> w;
 	for (count j = 0; j < v.size(); j++) {
 		w.push_back(fmin(floor(v[j] * s.aMax), s.aMax - 1));
@@ -96,7 +96,7 @@ const int MocnikGenerator::toIndex(MocnikGenerator::LayerState &s, const std::ve
 	return toIndex(s, w);
 }
 
-const int MocnikGenerator::toIndex(MocnikGenerator::LayerState &s, const std::vector<int> &v) {
+int MocnikGenerator::toIndex(MocnikGenerator::LayerState &s, const std::vector<int> &v) {
 	int x = 0;
 	for (count j = v.size() - 1; j >= 0 && j < v.size(); j--) {
 		x = x * s.aMax + v[j];
@@ -104,8 +104,9 @@ const int MocnikGenerator::toIndex(MocnikGenerator::LayerState &s, const std::ve
 	return x;
 }
 
-const std::vector<int> MocnikGenerator::fromIndex(MocnikGenerator::LayerState &s, const int &i) {
+std::vector<int> MocnikGenerator::fromIndex(MocnikGenerator::LayerState &s, const int &i) {
 	std::vector<int> v;
+	v.reserve(dim);
 	int i2 = i;
 	for (count j = 0; j < dim; j++) {
 		int i2New = i2 % s.aMax;
@@ -115,7 +116,7 @@ const std::vector<int> MocnikGenerator::fromIndex(MocnikGenerator::LayerState &s
 	return v;
 }
 
-const std::vector<int> MocnikGenerator::boxSurface(MocnikGenerator::LayerState &s, const int &i, const int &r) {
+std::vector<int> MocnikGenerator::boxSurface(MocnikGenerator::LayerState &s, const int &i, const int &r) {
 	// test for vanishing r
 	if (r == 0) {
 		std::vector<int> seResult;
@@ -178,7 +179,7 @@ const std::vector<int> MocnikGenerator::boxSurface(MocnikGenerator::LayerState &
 	return seResult;
 }
 
-const std::vector<int> MocnikGenerator::boxVolume(MocnikGenerator::LayerState &s, const int &i, const double &r) {
+std::vector<int> MocnikGenerator::boxVolume(MocnikGenerator::LayerState &s, const int &i, const double &r) {
 	int r2 = ceil(r * s.aMax);
 	std::vector<std::vector<int>> se;
 	std::vector<int> tmp;

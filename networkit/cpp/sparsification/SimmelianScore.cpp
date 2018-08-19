@@ -45,10 +45,10 @@ std::vector<RankedNeighbors> SimmelianScore::getRankedNeighborhood(const Graph& 
 
 }
 
-Redundancy SimmelianScore::getOverlap(	const node& ego,
-												const node& alter,
+Redundancy SimmelianScore::getOverlap(const node ego,
+												const node alter,
 												const std::vector<RankedNeighbors>& neighbors,
-												const count& maxRank) {
+												const count maxRank) {
 	//Initialization of output values
 	Redundancy result = Redundancy(0, 0.0);
 
@@ -77,14 +77,14 @@ Redundancy SimmelianScore::getOverlap(	const node& ego,
  * egoNeighbors and alterNeighborsUnmatched to overlap.
  */
 void SimmelianScore::matchNeighbors(
-	const node& ego,
-	const node& alter,
-	const bool& reciprocityCheck,
-	std::vector<RankedEdge>::const_iterator& egoIt,
+	const node /*ego*/,
+	const node alter,
+	const bool /*reciprocityCheck*/,
+	std::vector<RankedEdge>::const_iterator,
 	const RankedNeighbors& egoNeighbors,
 	std::set<node>& egoNeighborsUnmatched,
 	std::set<node>& alterNeighborsUnmatched,
-	const count& rank,
+	const count rank,
 	count& overlap) {
 
 	for (auto egoIt : egoNeighbors) {
