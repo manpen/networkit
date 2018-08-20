@@ -153,8 +153,8 @@ TEST_F(Graph2Benchmark, edgeIteration) {
 	INFO("[BEGIN] (n=" , n , ")");
 	run.start();
 
-	G.forEdges([&](node u, node v){
-
+	G.forEdges([&](node, node){
+		// TODO: Is this correct? I would expect that this is optimised out!
 	});
 
 	run.stop();
@@ -175,8 +175,8 @@ TEST_F(Graph2Benchmark, parallelEdgeIteration) {
 	run.start();
 
 	count i = 0;
-	G.parallelForEdges([&](node u, node v){
-		i += 1;
+	G.parallelForEdges([&](node, node){
+		i += 1; // FIXME: This should cause a lot of false-sharing. What should be measured here?
 	});
 
 	EXPECT_TRUE(true) << "just iterate";

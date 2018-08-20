@@ -66,7 +66,7 @@ public:
 	 * @param directory
 	 * @return Elapsed time in milliseconds.
 	 */
-	uint64_t runApproximationAndWriteVectors(const std::string &graphPath);
+	uint64_t runApproximationAndWriteVectors(const std::string &graphPath); // FIXME: graphPath is ignored
 
 	/**
 	 * @return The elapsed time to setup the solver in milliseconds.

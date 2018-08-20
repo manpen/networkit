@@ -1010,7 +1010,7 @@ void DynTopHarmonicCloseness::updateReachableNodesAfterInsertion(node u,
     wComps->update(e);
     // TODO use alias with components so we do not have to replicate the code
     std::map<index, count> sizes = wComps->getComponentSizes();
-    G.forNodes([&](node w) {
+    G.forNodes([&](node w) { // TODO: Is this correct?
       index cv = wComps->componentOfNode(v);
       component[v] = cv;
       r[v] = sizes[cv];

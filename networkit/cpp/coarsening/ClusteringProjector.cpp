@@ -10,8 +10,8 @@
 
 namespace NetworKit {
 
-
-Partition ClusteringProjector::projectBack(const Graph& Gcoarse, const Graph& Gfine, const std::vector<node>& fineToCoarse,
+// TODO: Gcoarse is not used. Is this intentional? If so, please add method description
+Partition ClusteringProjector::projectBack(const Graph& /*Gcoarse*/, const Graph& Gfine, const std::vector<node>& fineToCoarse,
 		const Partition& zetaCoarse) {
 
 	Partition zetaFine(Gfine.upperNodeIdBound()); //Gfine.numberOfNodes()
