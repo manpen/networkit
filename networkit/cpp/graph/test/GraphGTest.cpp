@@ -18,11 +18,12 @@
 
 namespace NetworKit {
 
-INSTANTIATE_TEST_CASE_P(InstantiationName, GraphGTest, testing::Values(
+INSTANTIATE_TEST_CASE_P(GraphGTest, GraphGTest, testing::Values(
 						std::make_tuple(false, false),
 						std::make_tuple(true, false),
 						std::make_tuple(false, true),
-						std::make_tuple(true, true)));
+						std::make_tuple(true, true)), // last comma required to avoid Clang warning
+                  );
 
 bool GraphGTest::isWeighted() const {
 	return std::get<0>(GetParam());
