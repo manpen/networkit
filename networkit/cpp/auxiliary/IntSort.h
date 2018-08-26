@@ -8,6 +8,7 @@
 #ifndef INTSORT_H_
 #define INTSORT_H_
 
+#include <numeric>
 #include <limits>
 #include <array>
 #include <vector>
@@ -17,34 +18,16 @@
 #include <cassert>
 #include <omp.h>
 
+#include <tlx/math.hpp>
+
 namespace Aux {
 namespace IntSortInternal {
-
-template<typename T>
-uint32_t ilog2(T x) {
-    if (!x) return 0;
-
-    const typename std::make_unsigned<T>::type input = x;
-
-    int i = 0;
-    while (x >>= 1) i++;
-
-    i += (input > (1llu << i));
-
-    assert((1llu << i) >= input);
-    assert((1llu << i) / 2 < input);
-
-    return i;
-}
-
-template <typename T1, typename T2>
-auto idiv_ceil(T1 a, T2 b) -> decltype(a / b) {
-    return static_cast<T1>((static_cast<unsigned long long>(a)+b-1) / b);
-}
 
 template<typename T, typename Key, typename KeyExtract, size_t RADIX_WIDTH=8>
 class IntSortImpl {
     // compute mask and shifts to later compute the queue index
+	static_assert(std::is_integral<Key>::value, "Key has to be integral");
+	static_assert(!std::is_signed<Key>::value, "Key must not be signed");
     static_assert(RADIX_WIDTH >= 1, "Radix has to be at least 2");
     static_assert(RADIX_WIDTH <= 8 * sizeof(T), "Radix is not allowed to exceed numer of bits in T");
 
@@ -56,14 +39,14 @@ public:
     IntSortImpl(KeyExtract key_extract, const Key max_key) :
         key_extract{key_extract},
         max_key{max_key},
-        max_bits{ilog2(max_key)},
+        max_bits{tlx::integer_log2_ceil(max_key)},
         msb_radix_width{std::min(max_bits, RADIX_WIDTH)},
         msb_radix{Key{1} << msb_radix_width},
         msb_shift{max_bits - msb_radix_width},
     
         lsb_remaining_width{max_bits - msb_radix_width},
-        no_iters{static_cast<int>(idiv_ceil(std::max<size_t>(1llu, lsb_remaining_width), RADIX_WIDTH))},
-        adaptive_width{idiv_ceil(lsb_remaining_width, no_iters)},
+        no_iters{static_cast<int>(tlx::div_ceil(std::max<size_t>(1llu, lsb_remaining_width), RADIX_WIDTH))},
+        adaptive_width{tlx::div_ceil(lsb_remaining_width, no_iters)},
         adaptive_no_queues{1llu << adaptive_width},
         mask{(Key(1) << adaptive_width) - 1}
     {
@@ -78,7 +61,7 @@ public:
             return false; // in these cases the input is trivially sorted
 
 
-        const auto max_threads = std::min<int>(omp_get_max_threads(), idiv_ceil(n, 1 << 17));
+        const auto max_threads = std::min<int>(omp_get_max_threads(), tlx::div_ceil(n, 1 << 17));
 
         // compute how many iterations we need to sort numbers [0, ..., max_key], i.e. log(max_key, base=RADIX_WIDTH)
         std::array<size_t, no_queues + 1> splitter;
@@ -112,7 +95,7 @@ public:
             const auto no_threads = omp_get_num_threads();
 
             // figure out workload for each thread
-            const size_t chunk_size = idiv_ceil(n, no_threads);
+            const size_t chunk_size = tlx::div_ceil(n, no_threads);
             const auto chunk = std::make_pair(chunk_size * tid,
                                               std::min(chunk_size * (tid + 1),
                                                        n));
@@ -286,7 +269,9 @@ private:
  * results in 2**RADIX_WIDTH many queues. Due to cache effects typically 7 or 8
  * yields the best performance.
  */
-template<typename Iter, typename KeyExtract, typename Key, size_t RADIX_WIDTH = 8,
+template<typename Iter, typename KeyExtract,
+	typename Key = decltype(std::declval<KeyExtract>()(*std::declval<Iter>())),
+	size_t RADIX_WIDTH = 8,
     typename T = typename std::iterator_traits<Iter>::value_type>
 inline void intsort(const Iter begin, const Iter end, KeyExtract key_extract,
                  const Key max_key = std::numeric_limits<Key>::max()) {
@@ -307,7 +292,9 @@ inline void intsort(const Iter begin, const Iter end, KeyExtract key_extract,
  * specialisation, as it avoids (if necessary) copying the data from the temporary
  * buffer back into the input buffer in the last step.
  */
-template<typename T, typename KeyExtract, typename Key, size_t RADIX_WIDTH = 8>
+template<typename T, typename KeyExtract,
+	typename Key = decltype(std::declval<KeyExtract>()(std::declval<T>())),
+	size_t RADIX_WIDTH = 8>
 inline void intsort(std::vector<T> &input, KeyExtract key_extract,
                  const Key max_key = std::numeric_limits<Key>::max()) {
     auto begin = input.begin();
