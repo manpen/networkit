@@ -331,6 +331,9 @@ Graph HyperbolicGenerator::generate(const vector<double> &angles, const vector<d
 					//double distance = HyperbolicSpace::nativeDistance(angles[i], radii[i], bandAngles[j][cIndex], );
 					double q = edgeProb(distance);
 					q = q / upperBoundProb; //since the candidate was selected by the jumping process, we have to adjust the probabilities
+					if (q > 1) {
+						throw std::runtime_error("Upper bound was wrong!");
+					}
 					assert(q <= 1);
 					assert(q >= 0);
 
@@ -345,7 +348,7 @@ Graph HyperbolicGenerator::generate(const vector<double> &angles, const vector<d
 					//advance! - careful, the following is only an approximation
 					double deltaPhi = angleDist(angles[i], bandAngles[j][cIndex]);
 					double coshDist = coshr*coshBandR-sinhr*sinhBandR*cos(deltaPhi);
-					double lowerBoundDistance = acosh(coshDist);
+					double lowerBoundDistance = acosh(coshDist)-(bandRadii[j+1]-bandRadii[j]);
 
 					upperBoundProb = edgeProb(lowerBoundDistance);
 					double probdenom = std::log(1-upperBoundProb);
