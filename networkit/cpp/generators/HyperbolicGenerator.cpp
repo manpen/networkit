@@ -332,7 +332,7 @@ Graph HyperbolicGenerator::generate(const vector<double> &angles, const vector<d
 					double q = edgeProb(distance);
 					q = q / upperBoundProb; //since the candidate was selected by the jumping process, we have to adjust the probabilities
 					if (q > 1) {
-						throw std::runtime_error("Upper bound was wrong!");
+						throw std::runtime_error("Upper bound was wrong: " + std::to_string(angles[i]) + ", " + std::to_string(bandAngles[j][cIndex]));
 					}
 					assert(q <= 1);
 					assert(q >= 0);
@@ -348,7 +348,7 @@ Graph HyperbolicGenerator::generate(const vector<double> &angles, const vector<d
 					//advance! - careful, the following is only an approximation
 					double deltaPhi = angleDist(angles[i], bandAngles[j][cIndex]);
 					double coshDist = coshr*coshBandR-sinhr*sinhBandR*cos(deltaPhi);
-					double lowerBoundDistance = acosh(coshDist)-(bandRadii[j+1]-bandRadii[j]);
+					double lowerBoundDistance = acosh(coshDist);
 
 					upperBoundProb = edgeProb(lowerBoundDistance);
 					double probdenom = std::log(1-upperBoundProb);
@@ -360,7 +360,7 @@ Graph HyperbolicGenerator::generate(const vector<double> &angles, const vector<d
 				int pointsSkipped = 0;
 				while (cIndex < bandAngles[j].size() && pointsSkipped < bandAngles[j].size() && leftOf(angles[i], bandAngles[j][cIndex])) {
 					//add point or not
-					if (bands[j][cIndex].getY() > radii[i]) {
+					if (bands[j][cIndex].getY() >= radii[i]) {
 						confirmPoint(cIndex);
 					}
 
@@ -380,7 +380,7 @@ Graph HyperbolicGenerator::generate(const vector<double> &angles, const vector<d
 				pointsSkipped = 0;
 				while (cIndex >= 0 && cIndex < bandAngles[j].size() && pointsSkipped < bandAngles[j].size() && leftOf(bandAngles[j][cIndex], angles[i]) ) {
 					//add point or not
-					if (bands[j][cIndex].getY() > radii[i]) {
+					if (bands[j][cIndex].getY() >= radii[i]) {
 						confirmPoint(cIndex);
 					}
 
