@@ -603,7 +603,7 @@ public:
 				if (poincare) {
 					distance = HyperbolicSpace::poincareMetric(positions[i], euQuery);
 				} else {
-					distance = HyperbolicSpace::nativeDistance(angles[i], radii[i], phi_q, r_q);
+					distance = HyperbolicSpace::nativeDistance(angles[i], radii[i], phi_q, r_q);//can be accelerated with caching
 				}
 				assert(distance >= distancePair.first);
 

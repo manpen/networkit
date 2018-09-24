@@ -111,7 +111,6 @@ Graph HyperbolicGenerator::generateCold(const vector<double> &angles, const vect
 		permutation[i] = i;
 	}
 
-	//can probably be parallelized easily, but doesn't bring much benefit
 	Aux::Parallel::sort(permutation.begin(), permutation.end(), [&angles,&radii](index i, index j){return angles[i] < angles[j] || (angles[i] == angles[j] && radii[i] < radii[j]);});
 
 	vector<double> bandRadii = getBandRadii(n, R);
@@ -216,33 +215,65 @@ Graph HyperbolicGenerator::generate(const vector<double> &angles, const vector<d
 	if (T == 0) return generateCold(angles, radii, R);
 	assert(T > 0);
 
-	/**
-	 * fill Quadtree
-	 */
 	Aux::Timer timer;
 	timer.start();
-	index n = angles.size();
+	const count n = angles.size();
 	assert(radii.size() == n);
-
-	assert(alpha > 0);
-	Quadtree<index,false> quad(R, theoreticalSplit, alpha, capacity, balance);
 
 	for (index i = 0; i < n; i++) {
 		assert(radii[i] < R);
-		quad.addContent(i, angles[i], radii[i]);
 	}
 
-	quad.trim();
-	timer.stop();
-	INFO("Filled Quadtree, took ", timer.elapsedMilliseconds(), " milliseconds.");
+	assert(alpha > 0);
 
-	assert(quad.size() == n);
+	vector<index> permutation(n);
+	#pragma omp parallel for
+	for (omp_index i = 0; i < static_cast<omp_index>(n); i++) {
+		permutation[i] = i;
+	}
 
-	bool anglesSorted = std::is_sorted(angles.begin(), angles.end());
+	Aux::Parallel::sort(permutation.begin(), permutation.end(), [&angles,&radii](index i, index j){return angles[i] < angles[j] || (angles[i] == angles[j] && radii[i] < radii[j]);});
+
+	vector<double> bandRadii = getBandRadii(n, R);
+	//Initialize empty bands
+	vector<vector<Point2D<double>>> bands(bandRadii.size() - 1);
+	//Put points to bands
+	#pragma omp parallel for
+	for (omp_index j = 0; j < static_cast<omp_index>(bands.size()); j++){
+		for (index i = 0; i < n; i++){
+			double alias = permutation[i];
+			if (radii[alias] >= bandRadii[j] && radii[alias] <= bandRadii[j+1]){
+				bands[j].push_back(Point2D<double>(angles[alias], radii[alias], alias));
+			}
+		}
+	}
+
+	Aux::Timer bandTimer;
+	bandTimer.start();
+	const count bandCount = bands.size();
+
+	//1.Extract band angles to use them later, can create a band class to handle this more elegantly
+	vector<vector<double>> bandAngles(bandCount);
+	#pragma omp parallel for
+	for (omp_index i=0; i < static_cast<omp_index>(bandCount); i++){
+		const count currentBandSize = bands[i].size();
+		bandAngles[i].resize(currentBandSize);
+		for(index j=0; j < currentBandSize; j++) {
+			bandAngles[i][j] = bands[i][j].getX();
+		}
+		if (!std::is_sorted(bandAngles[i].begin(), bandAngles[i].end())) {
+			throw std::runtime_error("Points in bands must be sorted.");
+		}
+	}
+	bandTimer.stop();
+	INFO("Extracting band angles took ", bandTimer.elapsedMilliseconds(), " milliseconds.");
+
+	const double coshR = cosh(R);
+	assert(radii.size() == n);
 
 	//now define lambda
 	double beta = 1/T;
-	assert(beta == beta);
+	assert(!std::isnan(beta));
 	auto edgeProb = [beta, R](double distance) -> double {return 1 / (exp(beta*(distance-R)/2)+1);};
 
 	//get Graph
@@ -250,15 +281,73 @@ Graph HyperbolicGenerator::generate(const vector<double> &angles, const vector<d
 	count totalCandidates = 0;
 	#pragma omp parallel for
 	for (omp_index i = 0; i < static_cast<omp_index>(n); i++) {
-		vector<index> near;
-		totalCandidates += quad.getElementsProbabilistically(HyperbolicSpace::polarToCartesian(angles[i], radii[i]), edgeProb, anglesSorted, near);
-		for (index j : near) {
-			if (j >= n) ERROR("Node ", j, " prospective neighbour of ", i, " does not actually exist. Oops.");
-			if (j > i) {
-				result.addHalfEdge(i, j);
+		const double coshr = cosh(radii[i]);
+		const double sinhr = sinh(radii[i]);
+
+		auto angleDist = [](double phi, double psi){ return PI - std::abs(PI-std::abs(phi - psi)); };
+
+		for(index j = 0; j < bandCount; j++){
+			//get point in b_j with next angle clockwise
+			auto it = std::lower_bound(bandAngles[j].begin(), bandAngles[j].end(), angles[i]);
+			double upperBoundProb = 1;
+
+			while (it != bandAngles[j].end() && angleDist(*it, angles[i]) < PI) {
+				//confirm point or not
+				index candidateIndex = std::distance(bandAngles[j].begin(), it);
+				double distance = HyperbolicSpace::nativeDistance(angles[i], radii[i], *it, bands[j][candidateIndex].getY());
+				double q = edgeProb(distance);
+				q = q / upperBoundProb; //since the candidate was selected by the jumping process, we have to adjust the probabilities
+				assert(q <= 1);
+				assert(q >= 0);
+
+				//accept?
+				double acc = Aux::Random::real();
+				if (acc < q) {
+					result.addHalfEdge(j, bands[j][candidateIndex].getIndex());
+				}
+				totalCandidates++;
+
+				//advance!
+				double lowerBoundDistance = HyperbolicSpace::nativeDistance(angles[i],radii[i],*it,bandRadii[j]);//can be optimized with caching.
+				upperBoundProb = edgeProb(lowerBoundDistance);
+				double probdenom = std::log(1-upperBoundProb);
+				double random = Aux::Random::real();
+				double delta = std::log(random) / probdenom;
+				assert(delta == delta);
+				assert(delta >= 0);
+				std::advance(it, delta);
+			}
+
+			it = std::upper_bound(bandAngles[j].begin(), bandAngles[j].end(), angles[i]);
+			upperBoundProb = 1;
+
+			while (it != bandAngles[j].end() && angleDist(*it, angles[i]) < PI) {
+				//confirm point or not
+				index candidateIndex = std::distance(bandAngles[j].begin(), it);
+				double distance = HyperbolicSpace::nativeDistance(angles[i], radii[i], *it, bands[j][candidateIndex].getY());
+				double q = edgeProb(distance);
+				q = q / upperBoundProb; //since the candidate was selected by the jumping process, we have to adjust the probabilities
+				assert(q <= 1);
+				assert(q >= 0);
+
+				//accept?
+				double acc = Aux::Random::real();
+				if (acc < q) {
+					result.addHalfEdge(j, bands[j][candidateIndex].getIndex());
+				}
+				totalCandidates++;
+
+				//advance!
+				double lowerBoundDistance = HyperbolicSpace::nativeDistance(angles[i],radii[i],*it,bandRadii[j]);//can be optimized with caching. A
+				upperBoundProb = edgeProb(lowerBoundDistance);
+				double probdenom = std::log(1-upperBoundProb);
+				double random = Aux::Random::real();
+				double delta = std::log(random) / probdenom;
+				assert(delta == delta);
+				assert(delta >= 0);
+				std::advance(it, -delta);
 			}
 		}
-
 	}
 	DEBUG("Candidates tested: ", totalCandidates);
 	return result.toGraph(true, true);
