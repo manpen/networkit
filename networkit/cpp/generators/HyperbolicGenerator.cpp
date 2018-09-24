@@ -301,7 +301,7 @@ Graph HyperbolicGenerator::generate(const vector<double> &angles, const vector<d
 
 			double mirrorphi;
 			if (angles[i] >= PI) mirrorphi = angles[i] - PI;
-			else mirrorphi = angles[] + PI;
+			else mirrorphi = angles[i] + PI;
 
 			auto angleDist = [](double phi, double psi){ return PI - std::abs(PI-std::abs(phi - psi)); };
 
@@ -354,7 +354,8 @@ Graph HyperbolicGenerator::generate(const vector<double> &angles, const vector<d
 					return delta;
 				};
 
-				while (cIndex < bandAngles[j].size() && angleDist(bandAngles[j][cIndex], angles[i]) < PI) {
+				int pointsSkipped = 0;
+				while (cIndex < bandAngles[j].size() && pointsSkipped < bandAngles[j].size() && leftOf(angles[i], bandAngles[j][cIndex])) {
 					//add point or not
 					if (bands[j][cIndex].getY() > radii[i]) {
 						confirmPoint(cIndex);
@@ -363,21 +364,30 @@ Graph HyperbolicGenerator::generate(const vector<double> &angles, const vector<d
 					double delta = advanceIndex(cIndex);
 
 					cIndex += int(delta) + 1;
+					pointsSkipped += int(delta) + 1;
+
+					if (cIndex >= bandAngles[j].size()) {
+						cIndex -= bandAngles[j].size();
+					}
 				}
 
 				cIndex = nextBandIndex - 1;
 				upperBoundProb = 1;
 				assert(cIndex < bandAngles[j].size());
-
-				while (cIndex >= 0 && cIndex < bandAngles[j].size() && angleDist(bandAngles[j][cIndex], angles[i]) < PI) {
+				pointsSkipped = 0;
+				while (cIndex >= 0 && cIndex < bandAngles[j].size() && pointsSkipped < bandAngles[j].size() && leftOf(bandAngles[j][cIndex], angles[i]) ) {
 					//add point or not
 					if (bands[j][cIndex].getY() > radii[i]) {
 						confirmPoint(cIndex);
 					}
 
 					double delta = advanceIndex(cIndex);
+					pointsSkipped += int(delta) + 1;
 
 					cIndex -= int(delta) + 1;
+					if (cIndex < 0) {
+						cIndex += bandAngles[j].size();
+					}
 				}
 			}
 		}
