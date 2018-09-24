@@ -276,86 +276,111 @@ Graph HyperbolicGenerator::generate(const vector<double> &angles, const vector<d
 	assert(!std::isnan(beta));
 	auto edgeProb = [beta, R](double distance) -> double {return 1 / (exp(beta*(distance-R)/2)+1);};
 
+	auto leftOf = [](double phi, double psi){
+
+	if (phi < PI) {
+		return psi > phi && psi < phi + PI;
+	} else {
+		return psi > phi || psi < phi - PI;
+	}
+
+	};
+
 	//get Graph
 	GraphBuilder result(n, false, false);//no direct swap with probabilistic graphs
 	count totalCandidates = 0;
-	#pragma omp parallel for
-	for (omp_index i = 0; i < static_cast<omp_index>(n); i++) {
-		//std::cout << "Point " << i << std::flush;
-		const double coshr = cosh(radii[i]);
-		const double sinhr = sinh(radii[i]);
 
-		auto angleDist = [](double phi, double psi){ return PI - std::abs(PI-std::abs(phi - psi)); };
+	for (index bandIndex = 0; bandIndex < bandCount; bandIndex++) {
 
-		for(index j = 0; j < bandCount; j++){
-			//std::cout << ", band " << j << " of size " << bandAngles[j].size() << std::endl << std::flush;
-			if (bandAngles[j].size() == 0) {
-				continue;
-			}
+		#pragma omp parallel for
+		for (omp_index bandSweepIndex = 0; bandSweepIndex < static_cast<omp_index>(bands[bandIndex].size()); bandSweepIndex++) {
+			index i = bands[bandIndex][bandSweepIndex].getIndex();
 
-			assert(bandAngles[j].size() > 0);
-			//get point in b_j with next angle clockwise
-			auto it = std::lower_bound(bandAngles[j].begin(), bandAngles[j].end(), angles[i]);
-			//std::cout << " Found iterator. " << std::endl << std::flush;
-			const int nextBandIndex = std::distance(bandAngles[j].begin(), it);
-			int cIndex = nextBandIndex;
-			assert(cIndex >= 0);
+			const double coshr = cosh(radii[i]);
+			const double sinhr = sinh(radii[i]);
 
-			double upperBoundProb = 1;
+			double mirrorphi;
+			if (angles[i] >= PI) mirrorphi = angles[i] - PI;
+			else mirrorphi = angles[] + PI;
 
-			auto confirmPoint = [&](int cIndex){
-				double distance = HyperbolicSpace::nativeDistance(angles[i], radii[i], bandAngles[j][cIndex], bands[j][cIndex].getY());
-				double q = edgeProb(distance);
-				q = q / upperBoundProb; //since the candidate was selected by the jumping process, we have to adjust the probabilities
-				assert(q <= 1);
-				assert(q >= 0);
+			auto angleDist = [](double phi, double psi){ return PI - std::abs(PI-std::abs(phi - psi)); };
 
-				//accept?
-				double acc = Aux::Random::real();
-				if (acc < q) {
-					result.addHalfEdge(i, bands[j][cIndex].getIndex());
+			for(index j = bandIndex; j < bandCount; j++){
+				const double coshBandR = cosh(bandRadii[j]);
+				const double sinhBandR = cosh(bandRadii[j]);
+
+				if (bandAngles[j].size() == 0) {
+					continue;
 				}
-			};
 
-			auto advanceIndex = [&](int cIndex){
-				//advance! - careful, the following is only an approximation
-				double lowerBoundDistance = HyperbolicSpace::nativeDistance(angles[i],radii[i],bandAngles[j][cIndex],bandRadii[j]);//can be optimized with caching.
-				upperBoundProb = edgeProb(lowerBoundDistance);
-				double probdenom = std::log(1-upperBoundProb);
-				double random = Aux::Random::real();
-				double delta = std::log(random) / probdenom;
-				return delta;
-			};
+				assert(bandAngles[j].size() > 0);
+				//get point in b_j with next angle clockwise
+				auto it = std::lower_bound(bandAngles[j].begin(), bandAngles[j].end(), angles[i]);
+				const int nextBandIndex = std::distance(bandAngles[j].begin(), it);
+				int cIndex = nextBandIndex;
+				assert(cIndex >= 0);
 
-			while (cIndex < bandAngles[j].size() && angleDist(bandAngles[j][cIndex], angles[i]) < PI) {
-				//add point or not
-				confirmPoint(cIndex);
+				double upperBoundProb = 1;
 
-				double delta = advanceIndex(cIndex);
+				auto confirmPoint = [&](int cIndex){
+					double deltaPhi = angleDist(angles[i], bandAngles[j][cIndex]);
+					double candidateR = bands[j][cIndex].getY();
+					double coshDist = coshr*cosh(candidateR)-sinhr*sinh(candidateR)*cos(deltaPhi);
+					double distance = acosh(coshDist);
 
-				cIndex += int(delta) + 1;
-				//std::cout << "Jumped with delta " << delta << ", arrived at " << cIndex << std::endl << std::flush;
+					//double distance = HyperbolicSpace::nativeDistance(angles[i], radii[i], bandAngles[j][cIndex], );
+					double q = edgeProb(distance);
+					q = q / upperBoundProb; //since the candidate was selected by the jumping process, we have to adjust the probabilities
+					assert(q <= 1);
+					assert(q >= 0);
+
+					//accept?
+					double acc = Aux::Random::real();
+					if (acc < q) {
+						result.addHalfEdge(i, bands[j][cIndex].getIndex());
+					}
+				};
+
+				auto advanceIndex = [&](int cIndex){
+					//advance! - careful, the following is only an approximation
+					double deltaPhi = angleDist(angles[i], bandAngles[j][cIndex]);
+					double coshDist = coshr*coshBandR-sinhr*sinhBandR*cos(deltaPhi);
+					double lowerBoundDistance = acosh(coshDist);
+
+					upperBoundProb = edgeProb(lowerBoundDistance);
+					double probdenom = std::log(1-upperBoundProb);
+					double random = Aux::Random::real();
+					double delta = std::log(random) / probdenom;
+					return delta;
+				};
+
+				while (cIndex < bandAngles[j].size() && angleDist(bandAngles[j][cIndex], angles[i]) < PI) {
+					//add point or not
+					if (bands[j][cIndex].getY() > radii[i]) {
+						confirmPoint(cIndex);
+					}
+
+					double delta = advanceIndex(cIndex);
+
+					cIndex += int(delta) + 1;
+				}
+
+				cIndex = nextBandIndex - 1;
+				upperBoundProb = 1;
+				assert(cIndex < bandAngles[j].size());
+
+				while (cIndex >= 0 && cIndex < bandAngles[j].size() && angleDist(bandAngles[j][cIndex], angles[i]) < PI) {
+					//add point or not
+					if (bands[j][cIndex].getY() > radii[i]) {
+						confirmPoint(cIndex);
+					}
+
+					double delta = advanceIndex(cIndex);
+
+					cIndex -= int(delta) + 1;
+				}
 			}
-
-			//std::cout << "Completed clockwise scan " << std::endl << std::flush;
-
-			cIndex = nextBandIndex - 1;
-			upperBoundProb = 1;
-			assert(cIndex < bandAngles[j].size());
-
-			while (cIndex >= 0 && cIndex < bandAngles[j].size() && angleDist(bandAngles[j][cIndex], angles[i]) < PI) {
-				//confirm point or not
-				confirmPoint(cIndex);
-
-				double delta = advanceIndex(cIndex);
-
-				cIndex -= int(delta) + 1;
-				//std::cout << "Jumped with delta " << delta << ", arrived at " << cIndex << std::endl << std::flush;
-			}
-
-			//std::cout << "Completed counter-clockwise scan " << std::endl << std::flush;
 		}
-		//std::cout << std::endl;
 	}
 	DEBUG("Candidates tested: ", totalCandidates);
 	return result.toGraph(true, true);
