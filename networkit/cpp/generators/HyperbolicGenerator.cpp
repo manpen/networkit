@@ -281,20 +281,32 @@ Graph HyperbolicGenerator::generate(const vector<double> &angles, const vector<d
 	count totalCandidates = 0;
 	#pragma omp parallel for
 	for (omp_index i = 0; i < static_cast<omp_index>(n); i++) {
+		//std::cout << "Point " << i << std::flush;
 		const double coshr = cosh(radii[i]);
 		const double sinhr = sinh(radii[i]);
 
 		auto angleDist = [](double phi, double psi){ return PI - std::abs(PI-std::abs(phi - psi)); };
 
 		for(index j = 0; j < bandCount; j++){
+			//std::cout << ", band " << j << " of size " << bandAngles[j].size() << std::endl << std::flush;
+			if (bandAngles[j].size() == 0) {
+				continue;
+			}
+
+			assert(bandAngles[j].size() > 0);
 			//get point in b_j with next angle clockwise
 			auto it = std::lower_bound(bandAngles[j].begin(), bandAngles[j].end(), angles[i]);
+			//std::cout << " Found iterator. " << std::endl << std::flush;
+			const int nextBandIndex = std::distance(bandAngles[j].begin(), it);
+			int cIndex = nextBandIndex;
+			assert(cIndex >= 0);
+			//std::cout << " Found cIndex " << cIndex << std::endl << std::flush;
+
 			double upperBoundProb = 1;
 
-			while (it != bandAngles[j].end() && angleDist(*it, angles[i]) < PI) {
+			while (cIndex < bandAngles[j].size() && angleDist(bandAngles[j][cIndex], angles[i]) < PI) {
 				//confirm point or not
-				index candidateIndex = std::distance(bandAngles[j].begin(), it);
-				double distance = HyperbolicSpace::nativeDistance(angles[i], radii[i], *it, bands[j][candidateIndex].getY());
+				double distance = HyperbolicSpace::nativeDistance(angles[i], radii[i], bandAngles[j][cIndex], bands[j][cIndex].getY());
 				double q = edgeProb(distance);
 				q = q / upperBoundProb; //since the candidate was selected by the jumping process, we have to adjust the probabilities
 				assert(q <= 1);
@@ -303,28 +315,29 @@ Graph HyperbolicGenerator::generate(const vector<double> &angles, const vector<d
 				//accept?
 				double acc = Aux::Random::real();
 				if (acc < q) {
-					result.addHalfEdge(j, bands[j][candidateIndex].getIndex());
+					result.addHalfEdge(i, bands[j][cIndex].getIndex());
 				}
-				totalCandidates++;
 
-				//advance!
-				double lowerBoundDistance = HyperbolicSpace::nativeDistance(angles[i],radii[i],*it,bandRadii[j]);//can be optimized with caching.
+				//advance! - careful, the following is only an approximation
+				double lowerBoundDistance = HyperbolicSpace::nativeDistance(angles[i],radii[i],bandAngles[j][cIndex],bandRadii[j]);//can be optimized with caching.
 				upperBoundProb = edgeProb(lowerBoundDistance);
 				double probdenom = std::log(1-upperBoundProb);
 				double random = Aux::Random::real();
 				double delta = std::log(random) / probdenom;
-				assert(delta == delta);
-				assert(delta >= 0);
-				std::advance(it, delta);
+
+				cIndex += int(delta) + 1;
+				//std::cout << "Jumped with delta " << delta << ", arrived at " << cIndex << std::endl << std::flush;
 			}
 
-			it = std::upper_bound(bandAngles[j].begin(), bandAngles[j].end(), angles[i]);
+			//std::cout << "Completed clockwise scan " << std::endl << std::flush;
+
+			cIndex = nextBandIndex - 1;
 			upperBoundProb = 1;
+			assert(cIndex < bandAngles[j].size());
 
-			while (it != bandAngles[j].end() && angleDist(*it, angles[i]) < PI) {
+			while (cIndex >= 0 && angleDist(bandAngles[j][cIndex], angles[i]) < PI) {
 				//confirm point or not
-				index candidateIndex = std::distance(bandAngles[j].begin(), it);
-				double distance = HyperbolicSpace::nativeDistance(angles[i], radii[i], *it, bands[j][candidateIndex].getY());
+				double distance = HyperbolicSpace::nativeDistance(angles[i], radii[i], bandAngles[j][cIndex], bands[j][cIndex].getY());
 				double q = edgeProb(distance);
 				q = q / upperBoundProb; //since the candidate was selected by the jumping process, we have to adjust the probabilities
 				assert(q <= 1);
@@ -333,21 +346,26 @@ Graph HyperbolicGenerator::generate(const vector<double> &angles, const vector<d
 				//accept?
 				double acc = Aux::Random::real();
 				if (acc < q) {
-					result.addHalfEdge(j, bands[j][candidateIndex].getIndex());
+					result.addHalfEdge(i, bands[j][cIndex].getIndex());
 				}
-				totalCandidates++;
 
 				//advance!
-				double lowerBoundDistance = HyperbolicSpace::nativeDistance(angles[i],radii[i],*it,bandRadii[j]);//can be optimized with caching. A
+				double lowerBoundDistance = HyperbolicSpace::nativeDistance(angles[i],radii[i],bandAngles[j][cIndex],bandRadii[j]);//can be optimized with caching.
+				assert(lowerBoundDistance >= 0);
 				upperBoundProb = edgeProb(lowerBoundDistance);
 				double probdenom = std::log(1-upperBoundProb);
 				double random = Aux::Random::real();
 				double delta = std::log(random) / probdenom;
 				assert(delta == delta);
 				assert(delta >= 0);
-				std::advance(it, -delta);
+
+				cIndex -= int(delta) + 1;
+				//std::cout << "Jumped with delta " << delta << ", arrived at " << cIndex << std::endl << std::flush;
 			}
+
+			//std::cout << "Completed counter-clockwise scan " << std::endl << std::flush;
 		}
+		//std::cout << std::endl;
 	}
 	DEBUG("Candidates tested: ", totalCandidates);
 	return result.toGraph(true, true);
