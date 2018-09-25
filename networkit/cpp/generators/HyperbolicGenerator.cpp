@@ -364,8 +364,9 @@ Graph HyperbolicGenerator::generate(const vector<double> &angles, const vector<d
 					const long double candidateR = bands[j][cIndex].getY();
 
 					const long double coshDist = coshr*coshBandR-sinhr*sinhBandR*cos(deltaPhi);
+					const long double epsilon = 0.0001;//to avoid issues caused by rounding errors
 
-					long double lowerBoundDistance = std::max(0.0, acosh(coshDist)-(bandRadii[j+1]-bandRadii[j]));
+					long double lowerBoundDistance = std::max(0.0, acosh(coshDist)-(bandRadii[j+1]-bandRadii[j]) - epsilon);
 					if (lowerBoundDistance <= R) {
 						upperBoundProb = 1;
 						return 0.0;
