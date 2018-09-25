@@ -239,15 +239,18 @@ Graph HyperbolicGenerator::generate(const vector<double> &angles, const vector<d
 	//Initialize empty bands
 	vector<vector<Point2D<double>>> bands(bandRadii.size() - 1);
 	//Put points to bands
+	count pushed = 0;
 	#pragma omp parallel for
 	for (omp_index j = 0; j < static_cast<omp_index>(bands.size()); j++){
 		for (index i = 0; i < n; i++){
 			double alias = permutation[i];
-			if (radii[alias] >= bandRadii[j] && radii[alias] <= bandRadii[j+1]){
+			if (radii[alias] >= bandRadii[j] && radii[alias] < bandRadii[j+1]){
 				bands[j].push_back(Point2D<double>(angles[alias], radii[alias], alias));
+				pushed++;
 			}
 		}
 	}
+	if (pushed != n) throw std::runtime_error("Bands filled inconsistently");
 
 	Aux::Timer bandTimer;
 	bandTimer.start();
@@ -297,18 +300,18 @@ Graph HyperbolicGenerator::generate(const vector<double> &angles, const vector<d
 		for (omp_index bandSweepIndex = 0; bandSweepIndex < static_cast<omp_index>(bands[bandIndex].size()); bandSweepIndex++) {
 			index i = bands[bandIndex][bandSweepIndex].getIndex();
 
-			const double coshr = cosh(radii[i]);
-			const double sinhr = sinh(radii[i]);
+			const long double coshr = cosh(radii[i]);
+			const long double sinhr = sinh(radii[i]);
 
 			double mirrorphi;
 			if (angles[i] >= PI) mirrorphi = angles[i] - PI;
 			else mirrorphi = angles[i] + PI;
 
-			auto angleDist = [](double phi, double psi){ return PI - std::abs(PI-std::abs(phi - psi)); };
+			auto angleDist = [](long double phi, long double psi){ return PI - std::abs(PI-std::abs(phi - psi)); };
 
 			for(index j = bandIndex; j < bandCount; j++){
-				const double coshBandR = cosh(bandRadii[j+1]);
-				const double sinhBandR = cosh(bandRadii[j+1]);
+				const long double coshBandR = cosh(bandRadii[j+1]);
+				const long double sinhBandR = sinh(bandRadii[j+1]);
 
 				if (bandAngles[j].size() == 0) {
 					continue;
@@ -316,7 +319,7 @@ Graph HyperbolicGenerator::generate(const vector<double> &angles, const vector<d
 
 				assert(bandAngles[j].size() > 0);
 				//get point in b_j with next angle clockwise
-				auto it = std::lower_bound(bandAngles[j].begin(), bandAngles[j].end(), angles[i]);
+				const auto it = std::lower_bound(bandAngles[j].begin(), bandAngles[j].end(), angles[i]);
 				const int nextBandIndex = std::distance(bandAngles[j].begin(), it);
 				int cIndex = nextBandIndex;
 				assert(cIndex >= 0);
@@ -324,16 +327,26 @@ Graph HyperbolicGenerator::generate(const vector<double> &angles, const vector<d
 				double upperBoundProb = 1;
 
 				auto confirmPoint = [&](int cIndex){
+					//if (bands[j][cIndex].getIndex() == i) {
+					//	return;
+					//}
 					double deltaPhi = angleDist(angles[i], bandAngles[j][cIndex]);
 					double candidateR = bands[j][cIndex].getY();
 					double coshDist = coshr*cosh(candidateR)-sinhr*sinh(candidateR)*cos(deltaPhi);
-					double distance = acosh(coshDist);
+					double distance;
+					if (coshDist >= 1) distance = acosh(coshDist);
+					else distance = 0;
 
 					//double distance = HyperbolicSpace::nativeDistance(angles[i], radii[i], bandAngles[j][cIndex], );
 					double q = edgeProb(distance);
 					q = q / upperBoundProb; //since the candidate was selected by the jumping process, we have to adjust the probabilities
 					if (q > 1) {
-						throw std::runtime_error("Upper bound was wrong: " + std::to_string(angles[i]) + ", " + std::to_string(bandAngles[j][cIndex]));
+						throw std::runtime_error("Upper bound " + std::to_string(upperBoundProb) + " was wrong: ("
+								+ std::to_string(angles[i]) + ", " + std::to_string(radii[i]) + "), ("
+								+ std::to_string(bandAngles[j][cIndex]) + ", "+ std::to_string(candidateR) + ")"
+								+ ", real distance " + std::to_string(distance)
+								+ ", real probability " + std::to_string(edgeProb(distance))
+								+ ", deltaPhi " + std::to_string(deltaPhi==0));
 					}
 					assert(q <= 1);
 					assert(q >= 0);
@@ -346,12 +359,37 @@ Graph HyperbolicGenerator::generate(const vector<double> &angles, const vector<d
 				};
 
 				auto advanceIndex = [&](int cIndex){
-					//advance! - careful, the following is only an approximation
-					double deltaPhi = angleDist(angles[i], bandAngles[j][cIndex]);
-					double coshDist = coshr*coshBandR-sinhr*sinhBandR*cos(deltaPhi);
-					double lowerBoundDistance = acosh(coshDist)-(bandRadii[j+1]-bandRadii[j]);
+					//advance! - careful, the following is only an approximation - but should be right
+					const long double deltaPhi = angleDist(angles[i], bandAngles[j][cIndex]);
+					const long double candidateR = bands[j][cIndex].getY();
+
+					const long double coshDist = coshr*coshBandR-sinhr*sinhBandR*cos(deltaPhi);
+
+					long double lowerBoundDistance = std::max(0.0, acosh(coshDist)-(bandRadii[j+1]-bandRadii[j]));
+					if (lowerBoundDistance <= R) {
+						upperBoundProb = 1;
+						return 0.0;
+					}
+
+					const long double coshDistNeighbor = coshr*cosh(candidateR)-sinhr*sinh(candidateR)*cos(deltaPhi);
+					const long double distNeighbor = acosh(coshDistNeighbor);
+
+					if (distNeighbor < lowerBoundDistance) {
+						throw std::runtime_error("Trigonometry error! Lower bound " + std::to_string(lowerBoundDistance)
+						+ ", derived from " + std::to_string(acosh(coshDist)) + " - " + std::to_string((bandRadii[j+1]-bandRadii[j]))
+						+ ", but neighbor distance is " + std::to_string(distNeighbor)
+						+ ". Neighbor at (" + std::to_string(bandAngles[j][cIndex]) + ", " + std::to_string(candidateR) + ")"
+						+ ", bands at radii " + std::to_string(bandRadii[j]) + " and " + std::to_string(bandRadii[j+1])
+						+ ". Query point at (" + std::to_string(angles[i]) + ", " + std::to_string(radii[i]) + "). "
+						+ "Distance to higher band " + std::to_string(HyperbolicSpace::nativeDistance(angles[i], radii[i], bandAngles[j][cIndex], bandRadii[j+1])) + ". "
+						+ "Distance to lower band " + std::to_string(HyperbolicSpace::nativeDistance(angles[i], radii[i], bandAngles[j][cIndex], bandRadii[j])) + ". "
+						+ "Distance between bands " + std::to_string(HyperbolicSpace::nativeDistance(bandAngles[j][cIndex], bandRadii[j], bandAngles[j][cIndex], bandRadii[j+1])) + ". "
+						+ "Native distance to neighbor " + std::to_string(HyperbolicSpace::nativeDistance(angles[i], radii[i], bandAngles[j][cIndex], candidateR))
+						);
+					}
 
 					upperBoundProb = edgeProb(lowerBoundDistance);
+
 					double probdenom = std::log(1-upperBoundProb);
 					double random = Aux::Random::real();
 					double delta = std::log(random) / probdenom;
@@ -376,8 +414,11 @@ Graph HyperbolicGenerator::generate(const vector<double> &angles, const vector<d
 				}
 
 				cIndex = nextBandIndex - 1;
+				if (cIndex < 0) {
+					cIndex += bandAngles[j].size();
+				}
+
 				upperBoundProb = 1;
-				assert(cIndex < bandAngles[j].size());
 				pointsSkipped = 0;
 				while (cIndex >= 0 && cIndex < bandAngles[j].size() && pointsSkipped < bandAngles[j].size() && leftOf(bandAngles[j][cIndex], angles[i]) ) {
 					//add point or not
