@@ -50,6 +50,7 @@ HyperbolicGenerator::HyperbolicGenerator(count n, double avgDegree, double plexp
 	}
 
 	R = HyperbolicSpace::getTargetRadius(n, n*avgDegree/2, alpha, T);
+	std::cout << "Choose radius R " << R << std::endl << std::flush;
 	temperature=T;
 	initialize();
 }
@@ -348,7 +349,7 @@ Graph HyperbolicGenerator::generate(const vector<double> &angles, const vector<d
 					//advance! - careful, the following is only an approximation
 					double deltaPhi = angleDist(angles[i], bandAngles[j][cIndex]);
 					double coshDist = coshr*coshBandR-sinhr*sinhBandR*cos(deltaPhi);
-					double lowerBoundDistance = acosh(coshDist);
+					double lowerBoundDistance = acosh(coshDist)-(bandRadii[j+1]-bandRadii[j]);
 
 					upperBoundProb = edgeProb(lowerBoundDistance);
 					double probdenom = std::log(1-upperBoundProb);
