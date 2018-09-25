@@ -307,8 +307,8 @@ Graph HyperbolicGenerator::generate(const vector<double> &angles, const vector<d
 			auto angleDist = [](double phi, double psi){ return PI - std::abs(PI-std::abs(phi - psi)); };
 
 			for(index j = bandIndex; j < bandCount; j++){
-				const double coshBandR = cosh(bandRadii[j]);
-				const double sinhBandR = cosh(bandRadii[j]);
+				const double coshBandR = cosh(bandRadii[j+1]);
+				const double sinhBandR = cosh(bandRadii[j+1]);
 
 				if (bandAngles[j].size() == 0) {
 					continue;
