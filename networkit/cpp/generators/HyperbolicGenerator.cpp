@@ -380,23 +380,23 @@ Graph HyperbolicGenerator::generate(const vector<double> &angles, const vector<d
 						return 0.0;
 					}
 
-					const double candidateR = bands[j][cIndex].getY();
-					const double coshDistNeighbor = coshRI*bandCoshR[j][cIndex]-sinhRI*bandSinhR[j][cIndex]*cos(deltaPhi);
-					const double distNeighbor = acosh(coshDistNeighbor);
-
-					if (distNeighbor < lowerBoundDistance) {
-						throw std::runtime_error("Trigonometry error! Lower bound " + std::to_string(lowerBoundDistance)
-						+ ", derived from " + std::to_string(acosh(coshDist)) + " - " + std::to_string((bandRadii[j+1]-bandRadii[j]))
-						+ ", but neighbor distance is " + std::to_string(distNeighbor)
-						+ ". Neighbor at (" + std::to_string(bandAngles[j][cIndex]) + ", " + std::to_string(candidateR) + ")"
-						+ ", bands at radii " + std::to_string(bandRadii[j]) + " and " + std::to_string(bandRadii[j+1])
-						+ ". Query point at (" + std::to_string(angles[i]) + ", " + std::to_string(radii[i]) + "). "
-						+ "Distance to higher band " + std::to_string(HyperbolicSpace::nativeDistance(angles[i], radii[i], bandAngles[j][cIndex], bandRadii[j+1])) + ". "
-						+ "Distance to lower band " + std::to_string(HyperbolicSpace::nativeDistance(angles[i], radii[i], bandAngles[j][cIndex], bandRadii[j])) + ". "
-						+ "Distance between bands " + std::to_string(HyperbolicSpace::nativeDistance(bandAngles[j][cIndex], bandRadii[j], bandAngles[j][cIndex], bandRadii[j+1])) + ". "
-						+ "Native distance to neighbor " + std::to_string(HyperbolicSpace::nativeDistance(angles[i], radii[i], bandAngles[j][cIndex], candidateR))
-						);
-					}
+//					const double candidateR = bands[j][cIndex].getY();
+//					const double coshDistNeighbor = coshRI*bandCoshR[j][cIndex]-sinhRI*bandSinhR[j][cIndex]*cos(deltaPhi);
+//					const double distNeighbor = acosh(coshDistNeighbor);
+//
+//					if (distNeighbor < lowerBoundDistance) {
+//						throw std::runtime_error("Trigonometry error! Lower bound " + std::to_string(lowerBoundDistance)
+//						+ ", derived from " + std::to_string(acosh(coshDist)) + " - " + std::to_string((bandRadii[j+1]-bandRadii[j]))
+//						+ ", but neighbor distance is " + std::to_string(distNeighbor)
+//						+ ". Neighbor at (" + std::to_string(bandAngles[j][cIndex]) + ", " + std::to_string(candidateR) + ")"
+//						+ ", bands at radii " + std::to_string(bandRadii[j]) + " and " + std::to_string(bandRadii[j+1])
+//						+ ". Query point at (" + std::to_string(angles[i]) + ", " + std::to_string(radii[i]) + "). "
+//						+ "Distance to higher band " + std::to_string(HyperbolicSpace::nativeDistance(angles[i], radii[i], bandAngles[j][cIndex], bandRadii[j+1])) + ". "
+//						+ "Distance to lower band " + std::to_string(HyperbolicSpace::nativeDistance(angles[i], radii[i], bandAngles[j][cIndex], bandRadii[j])) + ". "
+//						+ "Distance between bands " + std::to_string(HyperbolicSpace::nativeDistance(bandAngles[j][cIndex], bandRadii[j], bandAngles[j][cIndex], bandRadii[j+1])) + ". "
+//						+ "Native distance to neighbor " + std::to_string(HyperbolicSpace::nativeDistance(angles[i], radii[i], bandAngles[j][cIndex], candidateR))
+//						);
+//					}
 
 					upperBoundProb = std::min(edgeProb(lowerBoundDistance)*1.01, 1.0);
 
