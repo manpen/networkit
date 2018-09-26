@@ -17,7 +17,7 @@ using std::max;
 
 namespace NetworKit {
 
-double HyperbolicSpace::nativeDistance(double firstangle, long double firstR, double secondangle, long double secondR) {
+double HyperbolicSpace::nativeDistance(double firstangle, double firstR, double secondangle, double secondR) {
 	assert(firstR >= 0);
 	assert(secondR >= 0);
 	assert(firstangle >= 0);
@@ -30,7 +30,7 @@ double HyperbolicSpace::nativeDistance(double firstangle, long double firstR, do
 	}
 	else {
 		double deltaPhi = PI - abs(PI-abs(firstangle - secondangle));
-		long double coshDist = cosh(firstR)*cosh(secondR)-sinh(firstR)*sinh(secondR)*cos(deltaPhi);
+		double coshDist = cosh(firstR)*cosh(secondR)-sinh(firstR)*sinh(secondR)*cos(deltaPhi);
 		if (coshDist >= 1) result = acosh(coshDist);
 		else result = 0;
 	}

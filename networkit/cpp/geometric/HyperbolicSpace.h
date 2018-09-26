@@ -63,7 +63,7 @@ public:
 	 *
 	 * @return distance between two points in native hyperbolic representation
 	 */
-	static double nativeDistance(double firstangle, long double firstR, double secondangle, long double secondR);
+	static double nativeDistance(double firstangle, double firstR, double secondangle, double secondR);
 
 	/**
 	 * @param a first point in cartesian coordinates
