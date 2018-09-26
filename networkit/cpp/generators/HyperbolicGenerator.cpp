@@ -258,14 +258,20 @@ Graph HyperbolicGenerator::generate(const vector<double> &angles, const vector<d
 
 	//1.Extract band angles to use them later, can create a band class to handle this more elegantly
 	vector<vector<double>> bandAngles(bandCount);
+	vector<vector<double>> bandCoshR(bandCount);
+	vector<vector<double>> bandSinhR(bandCount);
 	#pragma omp parallel for
-	for (omp_index i=0; i < static_cast<omp_index>(bandCount); i++){
-		const count currentBandSize = bands[i].size();
-		bandAngles[i].resize(currentBandSize);
-		for(index j=0; j < currentBandSize; j++) {
-			bandAngles[i][j] = bands[i][j].getX();
+	for (omp_index j=0; j < static_cast<omp_index>(bandCount); j++){
+		const count currentBandSize = bands[j].size();
+		bandAngles[j].resize(currentBandSize);
+		bandCoshR[j].resize(currentBandSize);
+		bandSinhR[j].resize(currentBandSize);
+		for(index i=0; i < currentBandSize; i++) {
+			bandAngles[j][i] = bands[j][i].getX();
+			bandCoshR[j][i] = cosh(bands[j][i].getY());
+			bandSinhR[j][i] = sinh(bands[j][i].getY());
 		}
-		if (!std::is_sorted(bandAngles[i].begin(), bandAngles[i].end())) {
+		if (!std::is_sorted(bandAngles[j].begin(), bandAngles[j].end())) {
 			throw std::runtime_error("Points in bands must be sorted.");
 		}
 	}
@@ -300,8 +306,8 @@ Graph HyperbolicGenerator::generate(const vector<double> &angles, const vector<d
 		for (omp_index bandSweepIndex = 0; bandSweepIndex < static_cast<omp_index>(bands[bandIndex].size()); bandSweepIndex++) {
 			index i = bands[bandIndex][bandSweepIndex].getIndex();
 
-			const double coshr = cosh(radii[i]);
-			const double sinhr = sinh(radii[i]);
+			const double coshRI = bandCoshR[bandIndex][bandSweepIndex];
+			const double sinhRI = bandSinhR[bandIndex][bandSweepIndex];
 
 			double mirrorphi;
 			if (angles[i] >= PI) mirrorphi = angles[i] - PI;
@@ -312,7 +318,7 @@ Graph HyperbolicGenerator::generate(const vector<double> &angles, const vector<d
 			for(index j = bandIndex; j < bandCount; j++){
 				const double coshBandR = cosh(bandRadii[j+1]);
 				const double sinhBandR = sinh(bandRadii[j+1]);
-				const double coshBandRLower = cosh(bandRadii[j]);
+				const double coshBandRLower = cosh(bandRadii[j]);//could be cached
 				const double sinhBandRLower = sinh(bandRadii[j]);
 
 				if (bandAngles[j].size() == 0) {
@@ -333,8 +339,7 @@ Graph HyperbolicGenerator::generate(const vector<double> &angles, const vector<d
 					//	return;
 					//}
 					double deltaPhi = angleDist(angles[i], bandAngles[j][cIndex]);
-					double candidateR = bands[j][cIndex].getY();
-					double coshDist = coshr*cosh(candidateR)-sinhr*sinh(candidateR)*cos(deltaPhi);
+					double coshDist = coshRI*bandCoshR[j][cIndex]-sinhRI*bandSinhR[j][cIndex]*cos(deltaPhi);
 					double distance;
 					if (coshDist >= 1) distance = acosh(coshDist);
 					else distance = 0;
@@ -343,6 +348,7 @@ Graph HyperbolicGenerator::generate(const vector<double> &angles, const vector<d
 					double q = edgeProb(distance);
 					q = q / upperBoundProb; //since the candidate was selected by the jumping process, we have to adjust the probabilities
 					if (q > 1) {
+						double candidateR = bands[j][cIndex].getY();
 						throw std::runtime_error("Upper bound " + std::to_string(upperBoundProb) + " was wrong: ("
 								+ std::to_string(angles[i]) + ", " + std::to_string(radii[i]) + "), ("
 								+ std::to_string(bandAngles[j][cIndex]) + ", "+ std::to_string(candidateR) + ")"
@@ -364,8 +370,8 @@ Graph HyperbolicGenerator::generate(const vector<double> &angles, const vector<d
 					//advance! - careful, the following is only an approximation - but should be right
 					const double deltaPhi = angleDist(angles[i], bandAngles[j][cIndex]);
 
-					const double coshDist = coshr*coshBandR-sinhr*sinhBandR*cos(deltaPhi);
-					const double coshDistLower = coshr*coshBandRLower-sinhr*sinhBandRLower*cos(deltaPhi);
+					const double coshDist = coshRI*coshBandR-sinhRI*sinhBandR*cos(deltaPhi);
+					const double coshDistLower = coshRI*coshBandRLower-sinhRI*sinhBandRLower*cos(deltaPhi);
 					const double epsilon = 0.001;//to avoid issues caused by rounding errors
 
 					const double lowerBoundDistance = std::max(0.0, std::min(acosh(coshDistLower),  acosh(coshDist)-(bandRadii[j+1]-bandRadii[j]))  - epsilon);
@@ -375,7 +381,7 @@ Graph HyperbolicGenerator::generate(const vector<double> &angles, const vector<d
 					}
 
 					const double candidateR = bands[j][cIndex].getY();
-					const double coshDistNeighbor = coshr*cosh(candidateR)-sinhr*sinh(candidateR)*cos(deltaPhi);
+					const double coshDistNeighbor = coshRI*bandCoshR[j][cIndex]-sinhRI*bandSinhR[j][cIndex]*cos(deltaPhi);
 					const double distNeighbor = acosh(coshDistNeighbor);
 
 					if (distNeighbor < lowerBoundDistance) {
