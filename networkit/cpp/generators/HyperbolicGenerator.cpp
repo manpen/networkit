@@ -236,6 +236,15 @@ Graph HyperbolicGenerator::generate(const vector<double> &angles, const vector<d
 	Aux::Parallel::sort(permutation.begin(), permutation.end(), [&angles,&radii](index i, index j){return angles[i] < angles[j] || (angles[i] == angles[j] && radii[i] < radii[j]);});
 
 	vector<double> bandRadii = getBandRadii(n, R);
+
+	vector<double> bandLimitCosh(bandRadii.size());
+	vector<double> bandLimitSinh(bandRadii.size());
+
+	for (index i = 0; i < bandRadii.size(); i++) {
+		bandLimitCosh[i] = cosh(bandRadii[i]);
+		bandLimitSinh[i] = sinh(bandRadii[i]);
+	}
+
 	//Initialize empty bands
 	vector<vector<Point2D<double>>> bands(bandRadii.size() - 1);
 	//Put points to bands
@@ -316,10 +325,10 @@ Graph HyperbolicGenerator::generate(const vector<double> &angles, const vector<d
 			auto angleDist = [](double phi, double psi){ return PI - std::abs(PI-std::abs(phi - psi)); };
 
 			for(index j = bandIndex; j < bandCount; j++){
-				const double coshBandR = cosh(bandRadii[j+1]);
-				const double sinhBandR = sinh(bandRadii[j+1]);
-				const double coshBandRLower = cosh(bandRadii[j]);//could be cached
-				const double sinhBandRLower = sinh(bandRadii[j]);
+				const double coshBandR = bandLimitCosh[j+1];
+				const double sinhBandR = bandLimitSinh[j+1];
+				const double coshBandRLower = bandLimitCosh[j];
+				const double sinhBandRLower = bandLimitSinh[j];
 
 				if (bandAngles[j].size() == 0) {
 					continue;
