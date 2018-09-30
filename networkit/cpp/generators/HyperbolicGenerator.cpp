@@ -310,9 +310,9 @@ Graph HyperbolicGenerator::generate(const vector<double> &angles, const vector<d
 	count totalCandidates = 0;
 
 	for (index bandIndex = 0; bandIndex < bandCount; bandIndex++) {
-
+		const omp_index bandSize = static_cast<omp_index>(bands[bandIndex].size());
 		#pragma omp parallel for reduction(+:totalCandidates)
-		for (omp_index bandSweepIndex = 0; bandSweepIndex < static_cast<omp_index>(bands[bandIndex].size()); bandSweepIndex++) {
+		for (omp_index bandSweepIndex = 0; bandSweepIndex < bandSize; bandSweepIndex++) {
 			index i = bands[bandIndex][bandSweepIndex].getIndex();
 
 			const double coshRI = bandCoshR[bandIndex][bandSweepIndex];
@@ -325,10 +325,10 @@ Graph HyperbolicGenerator::generate(const vector<double> &angles, const vector<d
 			auto angleDist = [](double phi, double psi){ return PI - std::abs(PI-std::abs(phi - psi)); };
 
 			for(index j = bandIndex; j < bandCount; j++){
-				const double coshBandR = bandLimitCosh[j+1];
-				const double sinhBandR = bandLimitSinh[j+1];
-				const double coshBandRLower = bandLimitCosh[j];
-				const double sinhBandRLower = bandLimitSinh[j];
+				const double& coshBandR = bandLimitCosh[j+1];
+				const double& sinhBandR = bandLimitSinh[j+1];
+				const double& coshBandRLower = bandLimitCosh[j];
+				const double& sinhBandRLower = bandLimitSinh[j];
 
 				if (bandAngles[j].size() == 0) {
 					continue;
