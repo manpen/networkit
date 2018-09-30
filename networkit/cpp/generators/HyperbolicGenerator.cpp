@@ -50,7 +50,7 @@ HyperbolicGenerator::HyperbolicGenerator(count n, double avgDegree, double plexp
 	}
 
 	R = HyperbolicSpace::getTargetRadius(n, n*avgDegree/2, alpha, T);
-	std::cout << "Choose radius R " << R << std::endl << std::flush;
+	std::cout << "Chose radius R " << R << std::endl << std::flush;
 	temperature=T;
 	initialize();
 }
@@ -302,7 +302,7 @@ Graph HyperbolicGenerator::generate(const vector<double> &angles, const vector<d
 
 	for (index bandIndex = 0; bandIndex < bandCount; bandIndex++) {
 
-		#pragma omp parallel for
+		#pragma omp parallel for reduction(+:totalCandidates)
 		for (omp_index bandSweepIndex = 0; bandSweepIndex < static_cast<omp_index>(bands[bandIndex].size()); bandSweepIndex++) {
 			index i = bands[bandIndex][bandSweepIndex].getIndex();
 
@@ -338,6 +338,8 @@ Graph HyperbolicGenerator::generate(const vector<double> &angles, const vector<d
 					//if (bands[j][cIndex].getIndex() == i) {
 					//	return;
 					//}
+					totalCandidates += 1;
+
 					double deltaPhi = angleDist(angles[i], bandAngles[j][cIndex]);
 					double coshDist = coshRI*bandCoshR[j][cIndex]-sinhRI*bandSinhR[j][cIndex]*cos(deltaPhi);
 					double distance;
@@ -447,7 +449,7 @@ Graph HyperbolicGenerator::generate(const vector<double> &angles, const vector<d
 			}
 		}
 	}
-	DEBUG("Candidates tested: ", totalCandidates);
+	std::cout << "Candidates tested: " << totalCandidates << std::endl << std::flush;
 	return result.toGraph(true, true);
 
 }
