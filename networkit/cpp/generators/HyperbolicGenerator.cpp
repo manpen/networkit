@@ -249,7 +249,7 @@ Graph HyperbolicGenerator::generate(const vector<double> &angles, const vector<d
 	vector<vector<Point2D<double>>> bands(bandRadii.size() - 1);
 	//Put points to bands
 	count pushed = 0;
-	#pragma omp parallel for
+	#pragma omp parallel for reduction(+:pushed)
 	for (omp_index j = 0; j < static_cast<omp_index>(bands.size()); j++){
 		for (index i = 0; i < n; i++){
 			double alias = permutation[i];
@@ -259,7 +259,7 @@ Graph HyperbolicGenerator::generate(const vector<double> &angles, const vector<d
 			}
 		}
 	}
-	if (pushed != n) throw std::runtime_error("Bands filled inconsistently");
+	if (pushed != n) throw std::runtime_error("Bands filled inconsistently: " + std::to_string(pushed) + " != " + std::to_string(n));
 
 	Aux::Timer bandTimer;
 	bandTimer.start();
@@ -305,6 +305,8 @@ Graph HyperbolicGenerator::generate(const vector<double> &angles, const vector<d
 
 	};
 
+	auto angleDist = [](double phi, double psi){ return PI - std::abs(PI-std::abs(phi - psi)); };
+
 	//get Graph
 	GraphBuilder result(n, false, false);//no direct swap with probabilistic graphs
 	count totalCandidates = 0;
@@ -321,8 +323,6 @@ Graph HyperbolicGenerator::generate(const vector<double> &angles, const vector<d
 			double mirrorphi;
 			if (angles[i] >= PI) mirrorphi = angles[i] - PI;
 			else mirrorphi = angles[i] + PI;
-
-			auto angleDist = [](double phi, double psi){ return PI - std::abs(PI-std::abs(phi - psi)); };
 
 			for(index j = bandIndex; j < bandCount; j++){
 				const double& coshBandR = bandLimitCosh[j+1];
