@@ -227,13 +227,14 @@ TEST_F(GeneratorsBenchmark, benchmarkSequentialQuadtreeConstruction) {
 }
 
 TEST_F(GeneratorsBenchmark, benchmarkHyperbolicGeneratorMechanicGraphs) {
-	count n = 1000000;
-	double k = 6;
+	count n = 8388608;
+	double k = 8;
 	count m = n*k/2;
-	HyperbolicGenerator gen(n, k, 3, 0.14);
-	gen.setLeafCapacity(10);
+	double T = 0.5;
+	double gamma = 3;
+	HyperbolicGenerator gen(n, k, gamma, T);
 	Graph G = gen.generate();
-	EXPECT_NEAR(G.numberOfEdges(), m, m/10);
+	EXPECT_NEAR(G.numberOfEdges(), m, m/5);
 }
 
 TEST_F(GeneratorsBenchmark, benchmarkChungLuGenerator) {
