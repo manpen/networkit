@@ -235,7 +235,7 @@ Graph HyperbolicGenerator::generate(const vector<double> &angles, const vector<d
 
 	Aux::Parallel::sort(permutation.begin(), permutation.end(), [&angles,&radii](index i, index j){return angles[i] < angles[j] || (angles[i] == angles[j] && radii[i] < radii[j]);});
 
-	vector<double> bandRadii = getBandRadii(n, R);
+	vector<double> bandRadii = getBandRadii(n, R, 0.97);
 
 	vector<double> bandLimitCosh(bandRadii.size());
 	vector<double> bandLimitSinh(bandRadii.size());
