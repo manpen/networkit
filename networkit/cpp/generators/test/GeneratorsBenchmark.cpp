@@ -234,6 +234,8 @@ TEST_F(GeneratorsBenchmark, benchmarkHyperbolicGeneratorMechanicGraphs) {
 	double gamma = 3;
 	HyperbolicGenerator gen(n, k, gamma, T);
 	Graph G = gen.generate();
+	double avgDegree = 2*(double(G.numberOfEdges()) / n);
+	std::cout << "Average degree: " << avgDegree << std::endl;
 	EXPECT_NEAR(G.numberOfEdges(), m, m/5);
 }
 
