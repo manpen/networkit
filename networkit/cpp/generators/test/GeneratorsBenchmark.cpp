@@ -239,6 +239,25 @@ TEST_F(GeneratorsBenchmark, benchmarkHyperbolicGeneratorMechanicGraphs) {
 	EXPECT_NEAR(G.numberOfEdges(), m, m/5);
 }
 
+TEST_F(GeneratorsBenchmark, benchmarkHyperbolicGeneratorScaling) {
+	int maxN = 1 << 29;
+	for (int nExp = 10; nExp < 30; nExp++) {
+		const count n = 1 << nExp;
+		double k = 8;
+		count m = n*k/2;
+		double T = 0.5;
+		double gamma = 3;
+		HyperbolicGenerator gen(n, k, gamma, T);
+		Aux::Timer timer;
+		timer.start();
+		Graph G = gen.generate();
+		timer.stop();
+
+		double avgDegree = 2*(double(G.numberOfEdges()) / n);
+		std::cout << "n: " << n << ", ms: " << timer.elapsedMilliseconds() << ", avgDegree: " << avgDegree << std::endl << std::flush;
+	}
+}
+
 TEST_F(GeneratorsBenchmark, benchmarkChungLuGenerator) {
 	count n = 100000;
     int maxDegree = 100;
