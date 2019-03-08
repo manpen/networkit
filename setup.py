@@ -156,6 +156,9 @@ def buildNetworKit(install_prefix, externalCore=False, withTests=False):
 	from sysconfig import get_paths, get_config_var
 	comp_cmd.append("-DNETWORKIT_PYTHON="+get_paths()['include']) #provide python.h files
 	comp_cmd.append("-DNETWORKIT_PYTHON_SOABI="+get_config_var('SOABI')) #provide lib env specification
+
+	comp_cmd.append("-DNETWORKIT_NATIVE=ON")
+
 	if externalCore:
 		comp_cmd.append("-DNETWORKIT_BUILD_CORE=OFF")
 	if ninja_available:

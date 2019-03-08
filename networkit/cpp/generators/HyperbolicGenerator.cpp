@@ -19,6 +19,8 @@
  *
  */
 
+#define GIRG_COUNT_EDGES
+
 #include <cmath>
 
 #include <cstdlib>
@@ -155,9 +157,14 @@ Graph HyperbolicGenerator::generateCold(const vector<double> &angles, const vect
 	Aux::Timer timer;
 	timer.start();
 	vector<double> empty;
-	GraphBuilder result(n, false, false);
 
-	#pragma omp parallel
+#ifdef GIRG_COUNT_EDGES
+	GraphBuilder result(n, false, false);
+#endif
+
+	count num_edges = 0;
+	count dummy = 0;
+	#pragma omp parallel reduction(+:num_edges,dummy)
 	{
 		index id = omp_get_thread_num();
 		threadtimers[id].start();
@@ -199,8 +206,14 @@ Graph HyperbolicGenerator::generateCold(const vector<double> &angles, const vect
 			} else {
 				for (index j : near) {
 					if (j >= n) ERROR("Node ", j, " prospective neighbour of ", i, " does not actually exist. Oops.");
-					if(radii[j] > radii[i] || (radii[j] == radii[i] && angles[j] < angles[i]))
-						result.addHalfEdge(i,j);
+					if(radii[j] > radii[i] || (radii[j] == radii[i] && angles[j] < angles[i])) {
+#ifdef GIRG_COUNT_EDGES
+                        num_edges++;
+                        dummy ^= i^j;
+#else
+                        result.addHalfEdge(i, j);
+#endif
+                    }
 				}
 			}
 		}
@@ -208,7 +221,17 @@ Graph HyperbolicGenerator::generateCold(const vector<double> &angles, const vect
 	}
 	timer.stop();
 	INFO("Generating Edges took ", timer.elapsedMilliseconds(), " milliseconds.");
+
+	#ifdef GIRG_COUNT_EDGES
+	DEBUG("Edges created: ", num_edges);
+	DEBUG("Check sum: ", dummy);
+	#endif
+
+#ifdef GIRG_COUNT_EDGES
+    return {};
+#else
 	return result.toGraph(!directSwap, true);
+#endif
 }
 
 Graph HyperbolicGenerator::generate(const vector<double> &angles, const vector<double> &radii, double R, double T) {
@@ -246,22 +269,41 @@ Graph HyperbolicGenerator::generate(const vector<double> &angles, const vector<d
 	auto edgeProb = [beta, R](double distance) -> double {return 1 / (exp(beta*(distance-R)/2)+1);};
 
 	//get Graph
+#ifndef GIRG_COUNT_EDGES
 	GraphBuilder result(n, false, false);//no direct swap with probabilistic graphs
-	count totalCandidates = 0;
-	#pragma omp parallel for
-	for (omp_index i = 0; i < static_cast<omp_index>(n); i++) {
-		vector<index> near;
-		totalCandidates += quad.getElementsProbabilistically(HyperbolicSpace::polarToCartesian(angles[i], radii[i]), edgeProb, anglesSorted, near);
-		for (index j : near) {
-			if (j >= n) ERROR("Node ", j, " prospective neighbour of ", i, " does not actually exist. Oops.");
-			if (j > i) {
-				result.addHalfEdge(i, j);
-			}
-		}
+#endif
 
+	count totalCandidates = 0;
+	count num_edges = 0;
+	count dummy = 0;
+	#pragma omp parallel reduction(+:totalCandidates,num_edges,dummy)
+	{
+		#pragma omp for
+		for (omp_index i = 0; i < static_cast<omp_index>(n); i++) {
+			vector<index> near;
+			totalCandidates += quad.getElementsProbabilistically(HyperbolicSpace::polarToCartesian(angles[i], radii[i]), edgeProb,
+																 anglesSorted, near);
+			for (index j : near) {
+				if (j >= n) ERROR("Node ", j, " prospective neighbour of ", i, " does not actually exist. Oops.");
+				if (j > i) {
+#ifdef GIRG_COUNT_EDGES
+					num_edges++;
+					dummy ^= i^j;
+#else
+					result.addHalfEdge(i, j);
+#endif
+				}
+			}
+
+		}
 	}
 	DEBUG("Candidates tested: ", totalCandidates);
-	return result.toGraph(true, true);
-
+#ifdef GIRG_COUNT_EDGES
+	DEBUG("Edges created: ", num_edges);
+	DEBUG("Check sum: ", dummy);
+    return {};
+#else
+    return result.toGraph(true, true);
+#endif
 }
 }
