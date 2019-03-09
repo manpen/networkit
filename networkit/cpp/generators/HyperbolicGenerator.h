@@ -74,6 +74,22 @@ public:
 		return result;
 	}
 
+	count getNumberOfEdges() const {
+		return number_of_edges;
+	}
+
+	int64_t getSamplingTimeMS() const {
+		return timer_sampling;
+	}
+
+	int64_t getPreprocessingTimeMS() const {
+		return timer_preprocess;
+	}
+
+	int64_t getTotalTimeMS() const {
+		return timer_total;
+	}
+
 private:
 
 	/**
@@ -221,6 +237,12 @@ private:
 	bool theoreticalSplit;
 	double balance = 0.5;
 	static const bool directSwap = false;
+
+	count number_of_edges = 0;
+
+	int64_t timer_sampling = -1;
+	int64_t timer_preprocess = -1;
+	int64_t timer_total = -1;
 
 	/**
 	 * times

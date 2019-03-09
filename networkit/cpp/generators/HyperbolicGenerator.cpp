@@ -19,6 +19,8 @@
  *
  */
 
+#define GIRG_COUNT_EDGES
+
 #include <cmath>
 
 #include <cstdlib>
@@ -71,6 +73,9 @@ Graph HyperbolicGenerator::generate() {
 }
 
 Graph HyperbolicGenerator::generate(count n, double R, double alpha, double T) {
+	Aux::Timer timer;
+	timer.start();
+
 	assert(R > 0);
 	vector<double> angles(n);
 	vector<double> radii(n);
@@ -95,10 +100,17 @@ Graph HyperbolicGenerator::generate(count n, double R, double alpha, double T) {
 	}
 
 	INFO("Generated Points");
+
+	timer_sampling = timer.elapsedMilliseconds();
+
 	return generate(anglecopy, radiicopy, R, T);
 }
 
 Graph HyperbolicGenerator::generateCold(const vector<double> &angles, const vector<double> &radii, double R) {
+    Aux::Timer preprocessTimer;
+    preprocessTimer.start();
+
+
 	const count n = angles.size();
 	assert(radii.size() == n);
 
@@ -112,6 +124,7 @@ Graph HyperbolicGenerator::generateCold(const vector<double> &angles, const vect
 		permutation[i] = i;
 	}
 
+	//can probably be parallelized easily, but doesn't bring much benefit
 	Aux::Parallel::sort(permutation.begin(), permutation.end(), [&angles,&radii](index i, index j){return angles[i] < angles[j] || (angles[i] == angles[j] && radii[i] < radii[j]);});
 
 	vector<double> bandRadii = getBandRadii(n, R);
@@ -155,9 +168,16 @@ Graph HyperbolicGenerator::generateCold(const vector<double> &angles, const vect
 	Aux::Timer timer;
 	timer.start();
 	vector<double> empty;
-	GraphBuilder result(n, false, false);
 
-	#pragma omp parallel
+#ifdef GIRG_COUNT_EDGES
+	GraphBuilder result(n, false, false);
+#endif
+
+	timer_preprocess = preprocessTimer.elapsedMilliseconds();
+
+	count num_edges = 0;
+	count dummy = 0;
+	#pragma omp parallel reduction(+:num_edges,dummy)
 	{
 		index id = omp_get_thread_num();
 		threadtimers[id].start();
@@ -199,8 +219,14 @@ Graph HyperbolicGenerator::generateCold(const vector<double> &angles, const vect
 			} else {
 				for (index j : near) {
 					if (j >= n) ERROR("Node ", j, " prospective neighbour of ", i, " does not actually exist. Oops.");
-					if(radii[j] > radii[i] || (radii[j] == radii[i] && angles[j] < angles[i]))
-						result.addHalfEdge(i,j);
+					if(radii[j] > radii[i] || (radii[j] == radii[i] && angles[j] < angles[i])) {
+#ifdef GIRG_COUNT_EDGES
+                        num_edges++;
+                        dummy ^= i^j;
+#else
+                        result.addHalfEdge(i, j);
+#endif
+                    }
 				}
 			}
 		}
@@ -208,7 +234,22 @@ Graph HyperbolicGenerator::generateCold(const vector<double> &angles, const vect
 	}
 	timer.stop();
 	INFO("Generating Edges took ", timer.elapsedMilliseconds(), " milliseconds.");
+
+	timer_total = preprocessTimer.elapsedMilliseconds();
+
+
+	#ifdef GIRG_COUNT_EDGES
+	DEBUG("Edges created: ", num_edges);
+	DEBUG("Check sum: ", dummy);
+    #endif
+
+	number_of_edges = num_edges;
+
+#ifdef GIRG_COUNT_EDGES
+    return {};
+#else
 	return result.toGraph(!directSwap, true);
+#endif
 }
 
 Graph HyperbolicGenerator::generate(const vector<double> &angles, const vector<double> &radii, double R, double T) {
@@ -216,6 +257,18 @@ Graph HyperbolicGenerator::generate(const vector<double> &angles, const vector<d
 	if (T == 0) return generateCold(angles, radii, R);
 	assert(T > 0);
 
+    Aux::Timer preprocessTimer;
+    preprocessTimer.start();
+
+	std::cout << "Use general-polylog"
+    #ifdef GIRG_COUNT_EDGES
+    " counting only"
+    #endif
+    << std::endl;
+
+	/**
+	 * fill Quadtree
+	 */
 	Aux::Timer timer;
 	timer.start();
 	const count n = angles.size();
@@ -312,14 +365,21 @@ Graph HyperbolicGenerator::generate(const vector<double> &angles, const vector<d
 	auto angleDist = [](double phi, double psi){ return PI - std::abs(PI-std::abs(phi - psi)); };
 
 	//get Graph
+    #ifndef GIRG_COUNT_EDGES
 	GraphBuilder result(n, false, false);//no direct swap with probabilistic graphs
+    #endif
 	count totalCandidates = 0;
 	count totalSweptPoints = 0;
 	count totalQueryPoints = 0;
 
+	count num_edges = 0;
+	count dummy = 0;
+
+    timer_preprocess = preprocessTimer.elapsedMilliseconds();
+
 	for (index bandIndex = 0; bandIndex < bandCount; bandIndex++) {
 		const omp_index bandSize = static_cast<omp_index>(bands[bandIndex].size());
-		#pragma omp parallel for reduction(+:totalCandidates,totalSweptPoints,totalQueryPoints)
+		#pragma omp parallel for reduction(+:totalCandidates,totalSweptPoints,totalQueryPoints,num_edges,dummy)
 		for (omp_index bandSweepIndex = 0; bandSweepIndex < bandSize; bandSweepIndex++) {
 			index i = bands[bandIndex][bandSweepIndex].getIndex();
 			totalQueryPoints += 1;
@@ -349,7 +409,7 @@ Graph HyperbolicGenerator::generate(const vector<double> &angles, const vector<d
 				assert(cIndex <= bandAngles[j].size());
 				assert(cIndex >= 0);
 				cIndex = cIndex % bandAngles[j].size();
-				
+
 				double upperBoundProb = 1;
 
 				auto confirmPoint = [&](int cIndex){
@@ -382,7 +442,12 @@ Graph HyperbolicGenerator::generate(const vector<double> &angles, const vector<d
 					//accept?
 					double acc = Aux::Random::real();
 					if (acc < q) {
+                    #ifndef GIRG_COUNT_EDGES
 						result.addHalfEdge(i, bands[j][cIndex].getIndex());
+                    #else
+						dummy ^= i ^ j;
+						num_edges++;
+                    #endif
 					}
 				};
 
@@ -446,7 +511,7 @@ Graph HyperbolicGenerator::generate(const vector<double> &angles, const vector<d
 					if (cIndex >= bandAngles[j].size()) {
 						cIndex -= bandAngles[j].size();
 					}
-					
+
 				}
 				totalSweptPoints += sweptPoints;
 
@@ -482,7 +547,17 @@ Graph HyperbolicGenerator::generate(const vector<double> &angles, const vector<d
 	std::cout << "Candidates tested: " << totalCandidates << std::endl << std::flush;
 	std::cout << "Total Swept points: " << totalSweptPoints << std::endl << std::flush;
 	std::cout << "Total Query points: " << totalQueryPoints << std::endl << std::flush;
-	return result.toGraph(true, true);
 
+    timer_total = preprocessTimer.elapsedMilliseconds();
+
+    #ifndef GIRG_COUNT_EDGES
+	return result.toGraph(true, true);
+    #endif
+
+    number_of_edges = num_edges;
+
+	DEBUG("Edges created: ", num_edges);
+	DEBUG("Check sum: ", dummy);
+    return {};
 }
 }
