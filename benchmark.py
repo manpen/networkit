@@ -30,7 +30,7 @@ AvgDegs = [10, 100]
 
 
 with open('nkgen_bench.csv', 'w', newline='') as csvfile:
-    fields = ["host", "algo", "T", "alpha", "n", "deg", "time", "edges", "samplingTime", "preprocessTime", "totalTime"]
+    fields = ["host", "algo", "iter", "T", "alpha", "n", "deg", "time", "edges", "samplingTime", "preprocessTime", "totalTime"]
     writer = csv.DictWriter(csvfile, fieldnames=fields)
     writer.writeheader()
 
@@ -73,7 +73,7 @@ with open('nkgen_bench.csv', 'w', newline='') as csvfile:
             else:
                 print(" ... smaller problem timed out: skip")
 
-            writer.writerow({'host': hostname, 'algo': 'nkgen',
+            writer.writerow({'host': hostname, 'algo': 'nkgen', 'iter': iter,
                              'T': T, 'alpha':alpha, 'n':n, 'deg':deg,
                              "edges": num_edges,
                              'time':time_ms,"samplingTime": sampling_time, "preprocessTime": preprocess_time, "totalTime": total_time})
