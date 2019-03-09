@@ -72,6 +72,9 @@ Graph HyperbolicGenerator::generate() {
 }
 
 Graph HyperbolicGenerator::generate(count n, double R, double alpha, double T) {
+	Aux::Timer timer;
+	timer.start();
+
 	assert(R > 0);
 	vector<double> angles(n);
 	vector<double> radii(n);
@@ -96,10 +99,17 @@ Graph HyperbolicGenerator::generate(count n, double R, double alpha, double T) {
 	}
 
 	INFO("Generated Points");
+
+	timer_sampling = timer.elapsedMilliseconds();
+
 	return generate(anglecopy, radiicopy, R, T);
 }
 
 Graph HyperbolicGenerator::generateCold(const vector<double> &angles, const vector<double> &radii, double R) {
+    Aux::Timer preprocessTimer;
+    preprocessTimer.start();
+
+
 	const count n = angles.size();
 	assert(radii.size() == n);
 
@@ -162,6 +172,8 @@ Graph HyperbolicGenerator::generateCold(const vector<double> &angles, const vect
 	GraphBuilder result(n, false, false);
 #endif
 
+	timer_preprocess = preprocessTimer.elapsedMilliseconds();
+
 	count num_edges = 0;
 	count dummy = 0;
 	#pragma omp parallel reduction(+:num_edges,dummy)
@@ -222,10 +234,15 @@ Graph HyperbolicGenerator::generateCold(const vector<double> &angles, const vect
 	timer.stop();
 	INFO("Generating Edges took ", timer.elapsedMilliseconds(), " milliseconds.");
 
+	timer_total = preprocessTimer.elapsedMilliseconds();
+
+
 	#ifdef GIRG_COUNT_EDGES
 	DEBUG("Edges created: ", num_edges);
 	DEBUG("Check sum: ", dummy);
-	#endif
+    #endif
+
+	number_of_edges = num_edges;
 
 #ifdef GIRG_COUNT_EDGES
     return {};
@@ -298,6 +315,9 @@ Graph HyperbolicGenerator::generate(const vector<double> &angles, const vector<d
 		}
 	}
 	DEBUG("Candidates tested: ", totalCandidates);
+
+    number_of_edges = num_edges;
+
 #ifdef GIRG_COUNT_EDGES
 	DEBUG("Edges created: ", num_edges);
 	DEBUG("Check sum: ", dummy);

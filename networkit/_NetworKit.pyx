@@ -2307,6 +2307,11 @@ cdef extern from "cpp/generators/HyperbolicGenerator.h":
 		void setTheoreticalSplit(bool_t split) except +
 		void setBalance(double balance) except +
 		vector[double] getElapsedMilliseconds() except +
+		long long getNumberOfEdges() const
+		long long getSamplingTimeMS() const
+		long long getPreprocessingTimeMS() const
+		long long getTotalTimeMS() const
+
 		_Graph generate(vector[double] angles, vector[double] radii, double R, double T) except +
 
 cdef class HyperbolicGenerator(StaticGraphGenerator):
@@ -2348,6 +2353,18 @@ For a temperature of 0, the model resembles a unit-disk model in hyperbolic spac
 	def generate_advanced(self, angles, radii, R, T=0):
 		# TODO: documentation
 		return Graph(0).setThis((<_HyperbolicGenerator*>(self._this)).generate(angles, radii, R, T))
+
+	def getNumberOfEdges(self):
+		return (<_HyperbolicGenerator*>(self._this)).getNumberOfEdges()
+
+	def getSamplingTimeMS(self):
+		return (<_HyperbolicGenerator*>(self._this)).getSamplingTimeMS()
+
+	def getPreprocessingTimeMS(self):
+		return (<_HyperbolicGenerator*>(self._this)).getPreprocessingTimeMS()
+
+	def getTotalTimeMS(self):
+		return (<_HyperbolicGenerator*>(self._this)).getTotalTimeMS()
 
 	@classmethod
 	def fit(cls, Graph G, scale=1):
