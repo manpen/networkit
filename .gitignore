@@ -36,7 +36,7 @@ benchmark/
 _NetworKit.cpp
 build.conf/
 build/
-/build*
+/build*/
 /.build*
 include/
 lib/
