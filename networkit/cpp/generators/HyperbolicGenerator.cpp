@@ -102,7 +102,11 @@ Graph HyperbolicGenerator::generate(count n, double R, double alpha, double T) {
 
 	timer_sampling = timer.elapsedMilliseconds();
 
-	return generate(anglecopy, radiicopy, R, T);
+	auto tmp = generate(anglecopy, radiicopy, R, T);
+
+	timer_total = timer.elapsedMilliseconds();
+
+   return tmp;
 }
 
 Graph HyperbolicGenerator::generateCold(const vector<double> &angles, const vector<double> &radii, double R) {
@@ -234,7 +238,6 @@ Graph HyperbolicGenerator::generateCold(const vector<double> &angles, const vect
 	timer.stop();
 	INFO("Generating Edges took ", timer.elapsedMilliseconds(), " milliseconds.");
 
-	timer_total = preprocessTimer.elapsedMilliseconds();
 
 
 	#ifdef GIRG_COUNT_EDGES
@@ -256,6 +259,8 @@ Graph HyperbolicGenerator::generate(const vector<double> &angles, const vector<d
 	if (T == 0) return generateCold(angles, radii, R);
 	assert(T > 0);
 
+
+
 	/**
 	 * fill Quadtree
 	 */
@@ -275,6 +280,7 @@ Graph HyperbolicGenerator::generate(const vector<double> &angles, const vector<d
 	quad.trim();
 	timer.stop();
 	INFO("Filled Quadtree, took ", timer.elapsedMilliseconds(), " milliseconds.");
+	timer_preprocess = timer.elapsedMilliseconds();
 
 	assert(quad.size() == n);
 
@@ -289,6 +295,9 @@ Graph HyperbolicGenerator::generate(const vector<double> &angles, const vector<d
 #ifndef GIRG_COUNT_EDGES
 	GraphBuilder result(n, false, false);//no direct swap with probabilistic graphs
 #endif
+
+   Aux::Timer preprocessTimer;
+   preprocessTimer.start();
 
 	count totalCandidates = 0;
 	count num_edges = 0;
