@@ -20,7 +20,7 @@ TimeoutSeconds = 300
 Iterations = 5
 Ts = [0.0, 0.5, 0.9]
 PLEs = [2.2, 3.0]
-Ns = list(power10series(1e3, 1e7, 3))
+Ns = list(power10series(1e3, 1e8, 3))
 AvgDegs = [10, 100, 1000]
 
 def runNkGen(n, deg, alpha, T):
@@ -41,7 +41,7 @@ with open('nkgen_bench.csv', 'w', newline='') as csvfile:
     writer.writeheader()
 
     for iter, T, ple in itertools.product(range(Iterations), Ts, PLEs):
-        skip = max(Ns) 
+        skip = max(Ns) + 1
         for deg in AvgDegs:
             time_ms = 0
 
