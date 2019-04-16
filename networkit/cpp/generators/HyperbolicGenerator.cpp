@@ -295,13 +295,17 @@ Graph HyperbolicGenerator::generate(const vector<double> &angles, const vector<d
 	assert(!std::isnan(beta));
 	auto edgeProb = [beta, R](double distance) -> double {return 1 / (exp(beta*(distance-R)/2)+1);};
 
-	auto leftOf = [](double phi, double psi){
+	auto leftOf = [](const double phi, const double psi){
+		assert(phi < 2*PI);
+		assert(psi < 2*PI);
+		assert(phi >= 0);
+		assert(psi >= 0);
 
-	if (phi < PI) {
-		return psi > phi && psi < phi + PI;
-	} else {
-		return psi > phi || psi < phi - PI;
-	}
+		if (phi < PI) {
+			return psi > phi && psi < phi + PI;
+		} else {
+			return psi > phi || psi < phi - PI;
+		}
 
 	};
 
@@ -310,12 +314,15 @@ Graph HyperbolicGenerator::generate(const vector<double> &angles, const vector<d
 	//get Graph
 	GraphBuilder result(n, false, false);//no direct swap with probabilistic graphs
 	count totalCandidates = 0;
+	count totalSweptPoints = 0;
+	count totalQueryPoints = 0;
 
 	for (index bandIndex = 0; bandIndex < bandCount; bandIndex++) {
 		const omp_index bandSize = static_cast<omp_index>(bands[bandIndex].size());
-		#pragma omp parallel for reduction(+:totalCandidates)
+		#pragma omp parallel for reduction(+:totalCandidates,totalSweptPoints,totalQueryPoints)
 		for (omp_index bandSweepIndex = 0; bandSweepIndex < bandSize; bandSweepIndex++) {
 			index i = bands[bandIndex][bandSweepIndex].getIndex();
+			totalQueryPoints += 1;
 
 			const double coshRI = bandCoshR[bandIndex][bandSweepIndex];
 			const double sinhRI = bandSinhR[bandIndex][bandSweepIndex];
@@ -325,8 +332,8 @@ Graph HyperbolicGenerator::generate(const vector<double> &angles, const vector<d
 			else mirrorphi = angles[i] + PI;
 
 			for(index j = bandIndex; j < bandCount; j++){
-				const double& coshBandR = bandLimitCosh[j+1];
-				const double& sinhBandR = bandLimitSinh[j+1];
+				const double& coshBandRUpper = bandLimitCosh[j+1];
+				const double& sinhBandRUpper = bandLimitSinh[j+1];
 				const double& coshBandRLower = bandLimitCosh[j];
 				const double& sinhBandRLower = bandLimitSinh[j];
 
@@ -339,26 +346,27 @@ Graph HyperbolicGenerator::generate(const vector<double> &angles, const vector<d
 				const auto it = std::lower_bound(bandAngles[j].begin(), bandAngles[j].end(), angles[i]);
 				const int nextBandIndex = std::distance(bandAngles[j].begin(), it);
 				int cIndex = nextBandIndex;
+				assert(cIndex <= bandAngles[j].size());
 				assert(cIndex >= 0);
-
+				cIndex = cIndex % bandAngles[j].size();
+				
 				double upperBoundProb = 1;
 
 				auto confirmPoint = [&](int cIndex){
-					//if (bands[j][cIndex].getIndex() == i) {
-					//	return;
-					//}
+					if (bands[j][cIndex].getIndex() == i) {
+						return;
+					}
 					totalCandidates += 1;
 
-					double deltaPhi = angleDist(angles[i], bandAngles[j][cIndex]);
-					double coshDist = coshRI*bandCoshR[j][cIndex]-sinhRI*bandSinhR[j][cIndex]*cos(deltaPhi);
+					const double deltaPhi = angleDist(angles[i], bandAngles[j][cIndex]);
+					const double coshDist = coshRI*bandCoshR[j][cIndex]-sinhRI*bandSinhR[j][cIndex]*cos(deltaPhi);
 					double distance;
 					if (coshDist >= 1) distance = acosh(coshDist);
 					else distance = 0;
 
 					//double distance = HyperbolicSpace::nativeDistance(angles[i], radii[i], bandAngles[j][cIndex], );
 					double q = edgeProb(distance);
-					q = q / upperBoundProb; //since the candidate was selected by the jumping process, we have to adjust the probabilities
-					if (q > 1) {
+					if (q > upperBoundProb) {
 						double candidateR = bands[j][cIndex].getY();
 						throw std::runtime_error("Upper bound " + std::to_string(upperBoundProb) + " was wrong: ("
 								+ std::to_string(angles[i]) + ", " + std::to_string(radii[i]) + "), ("
@@ -367,6 +375,7 @@ Graph HyperbolicGenerator::generate(const vector<double> &angles, const vector<d
 								+ ", real probability " + std::to_string(edgeProb(distance))
 								+ ", deltaPhi " + std::to_string(deltaPhi));
 					}
+					q = q / upperBoundProb; //since the candidate was selected by the jumping process, we have to adjust the probabilities
 					assert(q <= 1);
 					assert(q >= 0);
 
@@ -377,18 +386,18 @@ Graph HyperbolicGenerator::generate(const vector<double> &angles, const vector<d
 					}
 				};
 
-				auto advanceIndex = [&](int cIndex){
+				auto computeSkipLength = [&](int cIndex){
 					//advance! - careful, the following is only an approximation - but should be right
 					const double deltaPhi = angleDist(angles[i], bandAngles[j][cIndex]);
 
-					const double coshDist = coshRI*coshBandR-sinhRI*sinhBandR*cos(deltaPhi);
+					const double coshDist = coshRI*coshBandRUpper-sinhRI*sinhBandRUpper*cos(deltaPhi);
 					const double coshDistLower = coshRI*coshBandRLower-sinhRI*sinhBandRLower*cos(deltaPhi);
 					const double epsilon = 0.001;//to avoid issues caused by rounding errors
 
 					const double lowerBoundDistance = std::max(0.0, std::min(acosh(coshDistLower),  acosh(coshDist)-(bandRadii[j+1]-bandRadii[j]))  - epsilon);
 					if (lowerBoundDistance <= R) {
 						upperBoundProb = 1;
-						return 0.0;
+						return 0;
 					}
 
 //					const double candidateR = bands[j][cIndex].getY();
@@ -411,28 +420,35 @@ Graph HyperbolicGenerator::generate(const vector<double> &angles, const vector<d
 
 					upperBoundProb = std::min(edgeProb(lowerBoundDistance)*1.01, 1.0);
 
-					double probdenom = std::log(1-upperBoundProb);
-					double random = Aux::Random::real();
-					double delta = std::log(random) / probdenom;
-					return delta;
+					const double probdenom = std::log(1-upperBoundProb);
+					const double random = Aux::Random::real();
+					const double delta = std::log(random) / probdenom;
+					//return 0;
+					return int(delta);
 				};
 
-				int pointsSkipped = 0;
-				while (cIndex < bandAngles[j].size() && pointsSkipped < bandAngles[j].size() && leftOf(angles[i], bandAngles[j][cIndex])) {
+				int sweptPoints = 0;
+				double lastAngleDelta = 0;
+				while (sweptPoints < bandAngles[j].size() && angleDist(bandAngles[j][cIndex], angles[i]) >= lastAngleDelta) {
+					assert(cIndex < bandAngles[j].size());
+					lastAngleDelta = angleDist(bandAngles[j][cIndex], angles[i]);
+
 					//add point or not
-					if (bands[j][cIndex].getY() >= radii[i]) {
+					if (bands[j][cIndex].getY() >= radii[i] && leftOf(angles[i], bandAngles[j][cIndex])) {
 						confirmPoint(cIndex);
 					}
 
-					double delta = advanceIndex(cIndex);
+					int delta = computeSkipLength(cIndex);
 
 					cIndex += int(delta) + 1;
-					pointsSkipped += int(delta) + 1;
+					sweptPoints += int(delta) + 1;
 
 					if (cIndex >= bandAngles[j].size()) {
 						cIndex -= bandAngles[j].size();
 					}
+					
 				}
+				totalSweptPoints += sweptPoints;
 
 				cIndex = nextBandIndex - 1;
 				if (cIndex < 0) {
@@ -440,25 +456,32 @@ Graph HyperbolicGenerator::generate(const vector<double> &angles, const vector<d
 				}
 
 				upperBoundProb = 1;
-				pointsSkipped = 0;
-				while (cIndex >= 0 && cIndex < bandAngles[j].size() && pointsSkipped < bandAngles[j].size() && leftOf(bandAngles[j][cIndex], angles[i]) ) {
+				sweptPoints = 0;
+				lastAngleDelta = 0;
+				while (sweptPoints < bandAngles[j].size() && angleDist(bandAngles[j][cIndex], angles[i]) >= lastAngleDelta) {
+					assert(cIndex >= 0 && cIndex < bandAngles[j].size());
+					lastAngleDelta = angleDist(bandAngles[j][cIndex], angles[i]);
+
 					//add point or not
-					if (bands[j][cIndex].getY() >= radii[i]) {
+					if (bands[j][cIndex].getY() >= radii[i] && leftOf(bandAngles[j][cIndex], angles[i])) {
 						confirmPoint(cIndex);
 					}
 
-					double delta = advanceIndex(cIndex);
-					pointsSkipped += int(delta) + 1;
+					int delta = computeSkipLength(cIndex);
+					sweptPoints += int(delta) + 1;
 
-					cIndex -= int(delta) + 1;
+					cIndex -= (int(delta) + 1);
 					if (cIndex < 0) {
 						cIndex += bandAngles[j].size();
 					}
 				}
+				totalSweptPoints += sweptPoints;
 			}
 		}
 	}
 	std::cout << "Candidates tested: " << totalCandidates << std::endl << std::flush;
+	std::cout << "Total Swept points: " << totalSweptPoints << std::endl << std::flush;
+	std::cout << "Total Query points: " << totalQueryPoints << std::endl << std::flush;
 	return result.toGraph(true, true);
 
 }
