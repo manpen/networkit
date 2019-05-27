@@ -17,11 +17,6 @@
 #include <networkit/auxiliary/Log.hpp>
 #include <networkit/geometric/HyperbolicSpace.hpp>
 
-using std::vector;
-using std::min;
-using std::max;
-using std::cos;
-
 namespace NetworKit {
 
 template <class T>
@@ -69,7 +64,7 @@ public:
 	void split() {
 		assert(isLeaf);
 		assert(children.size() == 0);
-		vector<double> middle(dimension);
+		std::vector<double> middle(dimension);
 		if (splitTheoretical) {
 			//Euclidean space is distributed equally
 			for (index d = 0; d < dimension; d++) {
@@ -79,7 +74,7 @@ public:
 			//median of points
 			const count numPoints = positions.size();
 			assert(numPoints > 0);//otherwise, why split?
-			vector<vector<double> > sorted(dimension);
+			std::vector<std::vector<double> > sorted(dimension);
 			for (index d = 0; d < dimension; d++) {
 				sorted[d].resize(numPoints);
 				for (index i = 0; i < numPoints; i++) {
@@ -93,8 +88,8 @@ public:
 		}
 		count childCount = pow(2,dimension);
 		for (index i = 0; i < childCount; i++) {
-			vector<double> lowerValues(dimension);
-			vector<double> upperValues(dimension);
+			std::vector<double> lowerValues(dimension);
+			std::vector<double> upperValues(dimension);
 			index bitCopy = i;
 			for (index d = 0; d < dimension; d++) {
 				if (bitCopy & 1) {
@@ -197,8 +192,8 @@ public:
 			if (removed && allLeaves && size() < coarsenLimit) {
 				//coarsen!!
 				//why not assert empty containers and then insert directly?
-				vector<T> allContent;
-				vector<Point<double> > allPositions;
+				std::vector<T> allContent;
+				std::vector<Point<double> > allPositions;
 				for (index i = 0; i < children.size(); i++) {
 					allContent.insert(allContent.end(), children[i].content.begin(), children[i].content.end());
 					allPositions.insert(allPositions.end(), children[i].positions.begin(), children[i].positions.end());
@@ -248,8 +243,8 @@ public:
 			minDistance = std::min(minDistance, extremalValue);
 		};
 
-		vector<double> closestValues(dimension);
-		vector<double> farthestValues(dimension);
+		std::vector<double> closestValues(dimension);
+		std::vector<double> farthestValues(dimension);
 
 		for (index d = 0; d < dimension; d++) {
 			if (std::abs(query[d] - minPoint.at(d)) < std::abs(query[d] - maxPoint.at(d))) {
@@ -298,7 +293,7 @@ public:
 		} else {
 			assert(content.size() == 0);
 			assert(positions.size() == 0);
-			vector<T> result;
+			std::vector<T> result;
 			for (index i = 0; i < children.size(); i++) {
 				std::vector<T> subresult = children[i].getElements();
 				result.insert(result.end(), subresult.begin(), subresult.end());
@@ -307,7 +302,7 @@ public:
 		}
 	}
 
-	void getCoordinates(vector<Point<double> > &pointContainer) const {
+	void getCoordinates(std::vector<Point<double> > &pointContainer) const {
 		if (isLeaf) {
 			pointContainer.insert(pointContainer.end(), positions.begin(), positions.end());
 		}
@@ -337,7 +332,7 @@ public:
 	 * @param lowR Optional value for the minimum radial coordinate of the query region
 	 * @param highR Optional value for the maximum radial coordinate of the query region
 	 */
-	void getElementsInEuclideanCircle(Point<double> center, double radius, vector<T> &result) const {
+	void getElementsInEuclideanCircle(Point<double> center, double radius, std::vector<T> &result) const {
 		if (outOfReach(center, radius)) {
 			return;
 		}
@@ -358,7 +353,7 @@ public:
 		}
 	}
 
-	count getElementsProbabilistically(Point<double> euQuery, std::function<double(double)> prob, vector<T> &result) const {
+	count getElementsProbabilistically(Point<double> euQuery, std::function<double(double)> prob, std::vector<T> &result) const {
 		TRACE("Getting Euclidean distances");
 		auto distancePair = EuclideanDistances(euQuery);
 		double probUB = prob(distancePair.first);
@@ -440,7 +435,7 @@ public:
 	}
 
 
-	void maybeGetKthElement(double upperBound, Point<double> euQuery, std::function<double(double)> prob, index k, vector<T> &circleDenizens) const {
+	void maybeGetKthElement(double upperBound, Point<double> euQuery, std::function<double(double)> prob, index k, std::vector<T> &circleDenizens) const {
 		TRACE("Maybe get element ", k, " with upper Bound ", upperBound);
 		assert(k < size());
 		if (isLeaf) {

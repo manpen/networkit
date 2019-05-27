@@ -12,9 +12,6 @@
 #include <networkit/geometric/HyperbolicSpace.hpp>
 #include <networkit/auxiliary/Log.hpp>
 
-using std::abs;
-using std::max;
-
 namespace NetworKit {
 
 double HyperbolicSpace::nativeDistance(double firstangle, double firstR, double secondangle, double secondR) {
@@ -26,10 +23,10 @@ double HyperbolicSpace::nativeDistance(double firstangle, double firstR, double 
 	assert(secondangle < 2*PI);
 	double result;
 	if (firstangle == secondangle) {
-		result = abs(firstR - secondR);
+		result = std::abs(firstR - secondR);
 	}
 	else {
-		double deltaPhi = PI - abs(PI-abs(firstangle - secondangle));
+		double deltaPhi = PI - std::abs(PI-std::abs(firstangle - secondangle));
 		double coshDist = cosh(firstR)*cosh(secondR)-sinh(firstR)*sinh(secondR)*cos(deltaPhi);
 		if (coshDist >= 1) result = acosh(coshDist);
 		else result = 0;
@@ -64,11 +61,11 @@ double HyperbolicSpace::poincareMetric(Point2D<double> a, Point2D<double> b) {
 //	return distance;
 //}
 
-void HyperbolicSpace::fillPoints(vector<double> &angles, vector<double> &radii, double R, double alpha) {
+void HyperbolicSpace::fillPoints(std::vector<double> &angles, std::vector<double> &radii, double R, double alpha) {
 	fillPoints(angles, radii, 0, 2*PI, 0, R, alpha);
 }
 
-void HyperbolicSpace::fillPoints(vector<double> &angles, vector<double> &radii, double minPhi, double maxPhi, double minR, double maxR, double alpha) {
+void HyperbolicSpace::fillPoints(std::vector<double> &angles, std::vector<double> &radii, double minPhi, double maxPhi, double minR, double maxR, double alpha) {
 	uint64_t n = radii.size();
 	assert(angles.size() == n);
 
@@ -99,7 +96,7 @@ Point2D<double> HyperbolicSpace::polarToCartesian(double phi, double r) {
 	return Point2D<double>(r*cos(phi), r*sin(phi));
 }
 
-std::map<index, Point<float> > HyperbolicSpace::polarToCartesian(const vector<double> &angles, const vector<double> &radii) {
+std::map<index, Point<float> > HyperbolicSpace::polarToCartesian(const std::vector<double> &angles, const std::vector<double> &radii) {
 	assert(radii.size() == angles.size());
 	std::map<index, Point<float> > result;
 	for (index i = 0; i < angles.size(); i++) {
@@ -148,7 +145,7 @@ double HyperbolicSpace::EuclideanRadiusToHyperbolic(double euclideanRadius) {
 }
 
 double HyperbolicSpace::maxRinSlice(double minPhi, double maxPhi, double phi_c, double r_c, double euRadius) {
-	double maxCos = max(cos(abs(minPhi - phi_c)), cos(abs(maxPhi - phi_c)));
+	double maxCos = std::max(cos(std::abs(minPhi - phi_c)), cos(std::abs(maxPhi - phi_c)));
 	//double mirrorAngle;
 	//if (phi_c >= PI) mirrorAngle = phi_c - PI;
 	//else mirrorAngle = phi_c + PI;
@@ -219,4 +216,5 @@ double HyperbolicSpace::hyperbolicSpaceInEuclideanCircle(double r_c, double d_c,
 	result += 4*(upper - lower);
 	return result;
 }
+
 }

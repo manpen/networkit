@@ -56,11 +56,11 @@ namespace NetworKit {
 
 class GeneratorsGTest: public testing::Test {
 public:
-	vector<double> getAngles(DynamicHyperbolicGenerator dynGen) {
+	std::vector<double> getAngles(DynamicHyperbolicGenerator dynGen) {
 		return dynGen.angles;
 	}
 
-	vector<double> getRadii(DynamicHyperbolicGenerator dynGen) {
+	std::vector<double> getRadii(DynamicHyperbolicGenerator dynGen) {
 		return dynGen.radii;
 	}
 
@@ -262,8 +262,8 @@ TEST_F(GeneratorsGTest, testDynamicHyperbolicGeneratorOnMovedNodes) {
 	double moveDistance = 0.1;
 
 	//set up initial node positions
-	vector<double> angles(n, -1);
-	vector<double> radii(n, -1);
+	std::vector<double> angles(n, -1);
+	std::vector<double> radii(n, -1);
 	HyperbolicSpace::fillPoints(angles, radii, R, alpha);
 	DynamicHyperbolicGenerator dynGen(angles, radii, R, alpha, T, movedShare, moveDistance);
 
@@ -318,8 +318,8 @@ TEST_F(GeneratorsGTest, testDynamicHyperbolicVisualization) {
 
 	double movedShare = 0.2;
 	double moveDistance = 1;
-	vector<double> angles(n);
-	vector<double> radii(n);
+	std::vector<double> angles(n);
+	std::vector<double> radii(n);
 
 	HyperbolicSpace::fillPoints(angles, radii, R, alpha);
 
@@ -817,8 +817,8 @@ TEST_F(GeneratorsGTest, testHyperbolicPointGeneration) {
 	double stretch = Aux::Random::real(0.5,1.5);
 	double alpha = Aux::Random::real(0.5,1.5);
 	double R = HyperbolicSpace::hyperbolicAreaToRadius(n)*stretch;
-	vector<double> angles(n, -1);
-	vector<double> radii(n, -1);
+	std::vector<double> angles(n, -1);
+	std::vector<double> radii(n, -1);
 	HyperbolicSpace::fillPoints(angles, radii, R, alpha);
 	for (index i = 0; i < n; i++) {
 		EXPECT_GE(angles[i], 0);

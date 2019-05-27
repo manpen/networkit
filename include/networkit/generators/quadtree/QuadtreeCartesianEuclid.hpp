@@ -35,14 +35,14 @@ public:
 		this->upper = upper;
 	}
 
-	QuadtreeCartesianEuclid(const vector<Point<double> > &positions, const vector<T> &content, bool theoreticalSplit=false, count capacity=1000) {
+	QuadtreeCartesianEuclid(const std::vector<Point<double> > &positions, const std::vector<T> &content, bool theoreticalSplit=false, count capacity=1000) {
 		const count n = positions.size();
 		assert(content.size() == n);
 		assert(n > 0);
 
 		this->dimension = positions[0].getDimensions();
-		vector<double> lowerValue(dimension);
-		vector<double> upperValue(dimension);
+		std::vector<double> lowerValue(dimension);
+		std::vector<double> upperValue(dimension);
 		for (index d = 0; d < dimension; d++) {
 			lowerValue[d] = positions[0].at(d);
 			upperValue[d] = positions[0].at(d);
@@ -91,22 +91,22 @@ public:
 	/**
 	 * Get all elements, regardless of position
 	 *
-	 * @return vector<T> of elements
+	 * @return std::vector<T> of elements
 	 */
-	vector<T> getElements() const {
+	std::vector<T> getElements() const {
 		return root.getElements();
 	}
 
-	void extractCoordinates(vector<Point<double> > &posContainer) const {
+	void extractCoordinates(std::vector<Point<double> > &posContainer) const {
 		root.getCoordinates(posContainer);
 	}
 
-	void getElementsInEuclideanCircle(const Point<double> circleCenter, const double radius, vector<T> &circleDenizens) const {
+	void getElementsInEuclideanCircle(const Point<double> circleCenter, const double radius, std::vector<T> &circleDenizens) const {
 		root.getElementsInEuclideanCircle(circleCenter, radius, circleDenizens);
 	}
 
 	template<typename L>
-	count getElementsProbabilistically(Point<double> euQuery, L prob, vector<T> &circleDenizens) {
+	count getElementsProbabilistically(Point<double> euQuery, L prob, std::vector<T> &circleDenizens) {
 		return root.getElementsProbabilistically(euQuery, prob, circleDenizens);
 	}
 

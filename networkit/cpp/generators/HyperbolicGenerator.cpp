@@ -71,12 +71,12 @@ Graph HyperbolicGenerator::generate() {
 
 Graph HyperbolicGenerator::generate(count n, double R, double alpha, double T) {
 	assert(R > 0);
-	vector<double> angles(n);
-	vector<double> radii(n);
+	std::vector<double> angles(n);
+	std::vector<double> radii(n);
 
 	//sample points randomly
 	HyperbolicSpace::fillPoints(angles, radii, R, alpha);
-	vector<index> permutation(n);
+	std::vector<index> permutation(n);
 
 	index p = 0;
 	std::generate(permutation.begin(), permutation.end(), [&p](){return p++;});
@@ -84,8 +84,8 @@ Graph HyperbolicGenerator::generate(count n, double R, double alpha, double T) {
 	//can probably be parallelized easily, but doesn't bring much benefit
 	Aux::Parallel::sort(permutation.begin(), permutation.end(), [&angles,&radii](index i, index j){return angles[i] < angles[j] || (angles[i] == angles[j] && radii[i] < radii[j]);});
 
-	vector<double> anglecopy(n);
-	vector<double> radiicopy(n);
+	std::vector<double> anglecopy(n);
+	std::vector<double> radiicopy(n);
 
 	#pragma omp parallel for
 	for (omp_index j = 0; j < static_cast<omp_index>(n); j++) {
@@ -97,7 +97,7 @@ Graph HyperbolicGenerator::generate(count n, double R, double alpha, double T) {
 	return generate(anglecopy, radiicopy, R, T);
 }
 
-Graph HyperbolicGenerator::generateCold(const vector<double> &angles, const vector<double> &radii, double R) {
+Graph HyperbolicGenerator::generateCold(const std::vector<double> &angles, const std::vector<double> &radii, double R) {
 	const count n = angles.size();
 	assert(radii.size() == n);
 
@@ -105,7 +105,7 @@ Graph HyperbolicGenerator::generateCold(const vector<double> &angles, const vect
 		assert(radii[i] < R);
 	}
 
-	vector<index> permutation(n);
+	std::vector<index> permutation(n);
 	#pragma omp parallel for
 	for (omp_index i = 0; i < static_cast<omp_index>(n); i++) {
 		permutation[i] = i;
@@ -114,9 +114,9 @@ Graph HyperbolicGenerator::generateCold(const vector<double> &angles, const vect
 	//can probably be parallelized easily, but doesn't bring much benefit
 	Aux::Parallel::sort(permutation.begin(), permutation.end(), [&angles,&radii](index i, index j){return angles[i] < angles[j] || (angles[i] == angles[j] && radii[i] < radii[j]);});
 
-	vector<double> bandRadii = getBandRadii(n, R);
+	std::vector<double> bandRadii = getBandRadii(n, R);
 	//Initialize empty bands
-	vector<vector<Point2D<double>>> bands(bandRadii.size() - 1);
+	std::vector<std::vector<Point2D<double>>> bands(bandRadii.size() - 1);
 	//Put points to bands
 	#pragma omp parallel for
 	for (omp_index j = 0; j < static_cast<omp_index>(bands.size()); j++){
@@ -136,7 +136,7 @@ Graph HyperbolicGenerator::generateCold(const vector<double> &angles, const vect
 	bandTimer.start();
 
 	//1.Extract band angles to use them later, can create a band class to handle this more elegantly
-	vector<vector<double>> bandAngles(bandCount);
+	std::vector<std::vector<double>> bandAngles(bandCount);
 	#pragma omp parallel for
 	for (omp_index i=0; i < static_cast<omp_index>(bandCount); i++){
 		const count currentBandSize = bands[i].size();
@@ -154,7 +154,7 @@ Graph HyperbolicGenerator::generateCold(const vector<double> &angles, const vect
 	//2.Insert edges
 	Aux::Timer timer;
 	timer.start();
-	vector<double> empty;
+	std::vector<double> empty;
 	GraphBuilder result(n, false, false);
 
 	#pragma omp parallel
@@ -166,7 +166,7 @@ Graph HyperbolicGenerator::generateCold(const vector<double> &angles, const vect
 			const double coshr = cosh(radii[i]);
 			const double sinhr = sinh(radii[i]);
 			count expectedDegree = (4/PI)*n*exp(-(radii[i])/2);
-			vector<index> near;
+			std::vector<index> near;
 			near.reserve(expectedDegree*1.1);
 			Point2D<double> pointV(angles[i], radii[i], i);
 			for(index j = 0; j < bandCount; j++){
@@ -175,11 +175,11 @@ Graph HyperbolicGenerator::generateCold(const vector<double> &angles, const vect
 					std::tie (minTheta, maxTheta) = getMinMaxTheta(angles[i], radii[i], bandRadii[j], R);
 					//minTheta = 0;
 					//maxTheta = 2*PI;
-					vector<Point2D<double>> neighborCandidates = getPointsWithinAngles(minTheta, maxTheta, bands[j], bandAngles[j]);
+					std::vector<Point2D<double>> neighborCandidates = getPointsWithinAngles(minTheta, maxTheta, bands[j], bandAngles[j]);
 
 					const count sSize = neighborCandidates.size();
 					for(index w = 0; w < sSize; w++){
-						double deltaPhi = PI - abs(PI-abs(angles[i] - neighborCandidates[w].getX()));
+						double deltaPhi = PI - std::abs(PI-std::abs(angles[i] - neighborCandidates[w].getX()));
 						if (coshr*cosh(neighborCandidates[w].getY())-sinhr*sinh(neighborCandidates[w].getY())*cos(deltaPhi) <= coshR) {
 							if (neighborCandidates[w].getIndex() != i){
 								near.push_back(neighborCandidates[w].getIndex());
@@ -211,7 +211,7 @@ Graph HyperbolicGenerator::generateCold(const vector<double> &angles, const vect
 	return result.toGraph(!directSwap, true);
 }
 
-Graph HyperbolicGenerator::generate(const vector<double> &angles, const vector<double> &radii, double R, double T) {
+Graph HyperbolicGenerator::generate(const std::vector<double> &angles, const std::vector<double> &radii, double R, double T) {
 	if (T < 0) throw std::runtime_error("Temperature cannot be negative.");
 	if (T == 0) return generateCold(angles, radii, R);
 	assert(T > 0);
@@ -250,7 +250,7 @@ Graph HyperbolicGenerator::generate(const vector<double> &angles, const vector<d
 	count totalCandidates = 0;
 	#pragma omp parallel for
 	for (omp_index i = 0; i < static_cast<omp_index>(n); i++) {
-		vector<index> near;
+		std::vector<index> near;
 		totalCandidates += quad.getElementsProbabilistically(HyperbolicSpace::polarToCartesian(angles[i], radii[i]), edgeProb, anglesSorted, near);
 		for (index j : near) {
 			if (j >= n) ERROR("Node ", j, " prospective neighbour of ", i, " does not actually exist. Oops.");
