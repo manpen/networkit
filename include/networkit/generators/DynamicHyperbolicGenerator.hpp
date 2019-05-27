@@ -90,14 +90,14 @@ private:
 	 */
 	void recomputeBands();
 
-	vector<index> getNeighborsInBands(index i, bool bothDirections=true);
+	std::vector<index> getNeighborsInBands(index i, bool bothDirections=true);
 
 	/**
 	 * Execute node movement part of time step
 	 *
 	 * @param result vector to store GraphEvents in
 	 */
-	void getEventsFromNodeMovement(vector<GraphEvent> &result);
+	void getEventsFromNodeMovement(std::vector<GraphEvent> &result);
 
 	/**
      * Move a single node
@@ -117,18 +117,18 @@ private:
 	double moveDistance;
 
 	//coordinates
-	vector<double> angles;
-	vector<double> radii;
+	std::vector<double> angles;
+	std::vector<double> radii;
 
 	//movement vectors
-	vector<double> angularMovement;
-	vector<double> radialMovement;
+	std::vector<double> angularMovement;
+	std::vector<double> radialMovement;
 
 	//data structures
 	Quadtree<index, false> quad;
-	vector<double> bandRadii;
-	vector<vector<Point2D<double>>> bands;
-	vector<vector<double> > bandAngles;
+	std::vector<double> bandRadii;
+	std::vector<std::vector<Point2D<double>>> bands;
+	std::vector<std::vector<double> > bandAngles;
 
 	bool initialized;
 };

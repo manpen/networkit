@@ -17,11 +17,6 @@
 #include "../../auxiliary/Log.hpp"
 #include "../../geometric/HyperbolicSpace.hpp"
 
-using std::vector;
-using std::min;
-using std::max;
-using std::cos;
-
 namespace NetworKit {
 
 template <class T>
@@ -108,10 +103,10 @@ public:
 			middleR = pow(maxR*maxR*(1-balance)+minR*minR*balance, 0.5);
 		} else {
 			//median of points
-			vector<double> sortedAngles = angles;
+			std::vector<double> sortedAngles = angles;
 			std::sort(sortedAngles.begin(), sortedAngles.end());
 			middleAngle = sortedAngles[sortedAngles.size()/2];
-			vector<double> sortedRadii = radii;
+			std::vector<double> sortedRadii = radii;
 			std::sort(sortedRadii.begin(), sortedRadii.end());
 			middleR = sortedRadii[sortedRadii.size()/2];
 		}
@@ -216,10 +211,10 @@ public:
 			if (removed && allLeaves && size() < coarsenLimit) {
 				//coarsen!!
 				//why not assert empty containers and then insert directly?
-				vector<T> allContent;
-				vector<Point2D<double> > allPositions;
-				vector<double> allAngles;
-				vector<double> allRadii;
+				std::vector<T> allContent;
+				std::vector<Point2D<double> > allPositions;
+				std::vector<double> allAngles;
+				std::vector<double> allRadii;
 				for (index i = 0; i < children.size(); i++) {
 					allContent.insert(allContent.end(), children[i].content.begin(), children[i].content.end());
 					allPositions.insert(allPositions.end(), children[i].positions.begin(), children[i].positions.end());
@@ -260,31 +255,31 @@ public:
 		double topDistance, bottomDistance, leftDistance, rightDistance;
 
 		if (phi < leftAngle || phi > rightAngle) {
-			topDistance = min(c.distance(query), d.distance(query));
+			topDistance = std::min(c.distance(query), d.distance(query));
 		} else {
-			topDistance = abs(r - maxR);
+			topDistance = std::abs(r - maxR);
 		}
 		if (topDistance <= radius) return false;
 		if (phi < leftAngle || phi > rightAngle) {
-			bottomDistance = min(a.distance(query), b.distance(query));
+			bottomDistance = std::min(a.distance(query), b.distance(query));
 		} else {
-			bottomDistance = abs(r - minR);
+			bottomDistance = std::abs(r - minR);
 		}
 		if (bottomDistance <= radius) return false;
 
-		double minDistanceR = r*cos(abs(phi-leftAngle));
+		double minDistanceR = r*cos(std::abs(phi-leftAngle));
 		if (minDistanceR > minR && minDistanceR < maxR) {
 			leftDistance = query.distance(HyperbolicSpace::polarToCartesian(phi, minDistanceR));
 		} else {
-			leftDistance = min(a.distance(query), d.distance(query));
+			leftDistance = std::min(a.distance(query), d.distance(query));
 		}
 		if (leftDistance <= radius) return false;
 
-		minDistanceR = r*cos(abs(phi-rightAngle));
+		minDistanceR = r*cos(std::abs(phi-rightAngle));
 		if (minDistanceR > minR && minDistanceR < maxR) {
 			rightDistance = query.distance(HyperbolicSpace::polarToCartesian(phi, minDistanceR));
 		} else {
-			rightDistance = min(b.distance(query), c.distance(query));
+			rightDistance = std::min(b.distance(query), c.distance(query));
 		}
 		if (rightDistance <= radius) return false;
 		return true;
@@ -403,7 +398,7 @@ public:
 			assert(content.size() == 0);
 			assert(angles.size() == 0);
 			assert(radii.size() == 0);
-			vector<T> result;
+			std::vector<T> result;
 			for (index i = 0; i < children.size(); i++) {
 				std::vector<T> subresult = children[i].getElements();
 				result.insert(result.end(), subresult.begin(), subresult.end());
@@ -412,7 +407,7 @@ public:
 		}
 	}
 
-	void getCoordinates(vector<double> &anglesContainer, vector<double> &radiiContainer) const {
+	void getCoordinates(std::vector<double> &anglesContainer, std::vector<double> &radiiContainer) const {
 		assert(angles.size() == radii.size());
 		if (isLeaf) {
 			anglesContainer.insert(anglesContainer.end(), angles.begin(), angles.end());
@@ -444,7 +439,7 @@ public:
 	 * @param lowR Optional value for the minimum radial coordinate of the query region
 	 * @param highR Optional value for the maximum radial coordinate of the query region
 	 */
-	void getElementsInEuclideanCircle(Point2D<double> center, double radius, vector<T> &result, double minAngle=0, double maxAngle=2*PI, double lowR=0, double highR = 1) const {
+	void getElementsInEuclideanCircle(Point2D<double> center, double radius, std::vector<T> &result, double minAngle=0, double maxAngle=2*PI, double lowR=0, double highR = 1) const {
 		if (minAngle >= rightAngle || maxAngle <= leftAngle || lowR >= maxR || highR < lowerBoundR) return;
 		if (outOfReach(center, radius)) {
 			return;
@@ -470,7 +465,7 @@ public:
 		}
 	}
 
-	count getElementsProbabilistically(Point2D<double> euQuery, std::function<double(double)> prob, bool suppressLeft, vector<T> &result) const {
+	count getElementsProbabilistically(Point2D<double> euQuery, std::function<double(double)> prob, bool suppressLeft, std::vector<T> &result) const {
 		double phi_q, r_q;
 		HyperbolicSpace::cartesianToPolar(euQuery, phi_q, r_q);
 		if (suppressLeft && phi_q > rightAngle) return 0;
@@ -549,7 +544,7 @@ public:
 	}
 
 
-	void maybeGetKthElement(double upperBound, Point2D<double> euQuery, std::function<double(double)> prob, index k, vector<T> &circleDenizens) const {
+	void maybeGetKthElement(double upperBound, Point2D<double> euQuery, std::function<double(double)> prob, index k, std::vector<T> &circleDenizens) const {
 		TRACE("Maybe get element ", k, " with upper Bound ", upperBound);
 		assert(k < size());
 		if (isLeaf) {

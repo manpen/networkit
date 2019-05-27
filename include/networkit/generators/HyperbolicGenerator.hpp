@@ -37,8 +37,8 @@ public:
 	 * @param[in] thresholdDistance Edges are added for nodes closer to each other than this threshold
 	 * @return Graph to be generated according to parameters
 	 */
-	Graph generate(const vector<double> &angles, const vector<double> &radii, double R, double T=0);
-	Graph generateCold(const vector<double> &angles, const vector<double> &radii, double R);
+	Graph generate(const std::vector<double> &angles, const std::vector<double> &radii, double R, double T=0);
+	Graph generateCold(const std::vector<double> &angles, const std::vector<double> &radii, double R);
 
 	/**
 	 * @return Graph to be generated according to parameters specified in constructor.
@@ -66,8 +66,8 @@ public:
 		this->balance = balance;
 	}
 
-	vector<double> getElapsedMilliseconds() const {
-		vector<double> result(threadtimers.size());
+	std::vector<double> getElapsedMilliseconds() const {
+		std::vector<double> result(threadtimers.size());
 		for (index i = 0; i < result.size(); i++) {
 			result[i] = threadtimers[i].elapsedMilliseconds();
 		}
@@ -83,8 +83,8 @@ private:
 
 	Graph generate(count n, double R, double alpha, double T = 0);
 
-	static vector<vector<double> > getBandAngles(const vector<vector<Point2D<double>>> &bands) {
-		vector<vector<double>> bandAngles(bands.size());
+	static std::vector<std::vector<double> > getBandAngles(const std::vector<std::vector<Point2D<double>>> &bands) {
+		std::vector<std::vector<double>> bandAngles(bands.size());
 		#pragma omp parallel for
 		for (omp_index i=0; i < static_cast<omp_index>(bands.size()); i++){
 			const count currentBandSize = bands[i].size();
@@ -96,13 +96,13 @@ private:
 		return bandAngles;
 	}
 
-	static vector<double> getBandRadii(int n, double R, double seriesRatio = 0.9) {
+	static std::vector<double> getBandRadii(int n, double R, double seriesRatio = 0.9) {
 		/*
 		* We assume band differences form a geometric series.
 		* Thus, there is a constant ratio(r) between band length differences
 		* i.e (c2-c1)/(c1-c0) = (c3-c2)/(c2-c1) = r
 		*/
-		vector<double> bandRadius;
+		std::vector<double> bandRadius;
 		bandRadius.push_back(0);
 		double a = R*(1-seriesRatio)/(1-pow(seriesRatio, log(n)));
 		const double logn = log(n);
@@ -144,7 +144,7 @@ private:
 	  return std::make_tuple(minTheta, maxTheta);
 	}
 
-	static vector<Point2D<double>> getPointsWithinAngles(double minTheta, double maxTheta, const vector<Point2D<double>> &band, vector<double> &bandAngles){
+	static std::vector<Point2D<double>> getPointsWithinAngles(double minTheta, double maxTheta, const std::vector<Point2D<double>> &band, std::vector<double> &bandAngles){
 		/**
 		Returns the list of points, w, that lies within minTheta and maxTheta
 		in the supplied band(That area is called as slab)
@@ -153,7 +153,7 @@ private:
 		//TODO: This can be done faster. Instead of returning the copying to slab array, just return the indexes and iterate over the band array
 		assert(band.size() == bandAngles.size());
 
-		vector<Point2D<double>> slab;
+		std::vector<Point2D<double>> slab;
 
 		std::vector<double>::iterator low;
 		std::vector<double>::iterator high;
@@ -225,7 +225,7 @@ private:
 	/**
 	 * times
 	 */
-	vector<Aux::Timer> threadtimers;
+	std::vector<Aux::Timer> threadtimers;
 };
 }
 #endif /* HYPERBOLICGENERATOR_H_ */

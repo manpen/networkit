@@ -196,7 +196,6 @@ void DynamicHyperbolicGenerator::moveNode(index toMove) {
 		}
 	}
 	double newradius = acosh(newcosh)/alpha;
-	//assert(abs(newradius - hyperbolicRadius) < moveEachStep);
 	if (newradius >= R) newradius = std::nextafter(R, std::numeric_limits<double>::lowest());
 	assert(newradius < R);
 	assert(newradius >= 0);

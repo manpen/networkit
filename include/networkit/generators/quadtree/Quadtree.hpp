@@ -40,7 +40,7 @@ public:
 		this->maxRadius = maxR;
 	}
 
-	Quadtree(const vector<double> &angles, const vector<double> &radii, const vector<T> &content, double stretch, bool theoreticalSplit=false, double alpha=1, count capacity=1000, double balance = 0.5) {
+	Quadtree(const std::vector<double> &angles, const std::vector<double> &radii, const std::vector<T> &content, double stretch, bool theoreticalSplit=false, double alpha=1, count capacity=1000, double balance = 0.5) {
 		const count n = angles.size();
 		assert(angles.size() == radii.size());
 		assert(radii.size() == content.size());
@@ -75,13 +75,13 @@ public:
 	/**
 	 * Get all elements, regardless of position
 	 *
-	 * @return vector<T> of elements
+	 * @return std::vector<T> of elements
 	 */
-	vector<T> getElements() const {
+	std::vector<T> getElements() const {
 		return root.getElements();
 	}
 
-	void extractCoordinates(vector<double> &anglesContainer, vector<double> &radiiContainer) const {
+	void extractCoordinates(std::vector<double> &anglesContainer, std::vector<double> &radiiContainer) const {
 		root.getCoordinates(anglesContainer, radiiContainer);
 	}
 
@@ -92,13 +92,13 @@ public:
 	 * @param circleCenter Cartesian coordinates of the query circle's center
 	 * @param hyperbolicRadius Radius of the query circle
 	 */
-	vector<T> getElementsInHyperbolicCircle(Point2D<double> circleCenter, double hyperbolicRadius) const {
-		vector<T> circleDenizens;
+	std::vector<T> getElementsInHyperbolicCircle(Point2D<double> circleCenter, double hyperbolicRadius) const {
+		std::vector<T> circleDenizens;
 		getElementsInHyperbolicCircle(circleCenter, hyperbolicRadius, circleDenizens);
 		return circleDenizens;
 	}
 
-	void getElementsInHyperbolicCircle(const Point2D<double> circleCenter, const double hyperbolicRadius, const bool suppressLeft, vector<T> &circleDenizens) const {
+	void getElementsInHyperbolicCircle(const Point2D<double> circleCenter, const double hyperbolicRadius, const bool suppressLeft, std::vector<T> &circleDenizens) const {
 		assert(circleDenizens.empty());
 		double cc_phi, cc_r;
 		HyperbolicSpace::cartesianToPolar(circleCenter, cc_phi, cc_r);
@@ -111,7 +111,7 @@ public:
 		//assert(maxR < 1);//this looks fishy
 		if (maxR > 1) maxR = 1;
 		if (minR < 0) {
-			maxR = std::max(abs(minR), maxR);
+			maxR = std::max(std::abs(minR), maxR);
 			minR = 0;
 			minPhi = 0;
 			maxPhi = 2*PI;
@@ -167,15 +167,15 @@ public:
 		}
 	}
 
-	void getElementsInHyperbolicCircle(const Point2D<double> circleCenter, const double hyperbolicRadius, vector<T> &circleDenizens) const {
+	void getElementsInHyperbolicCircle(const Point2D<double> circleCenter, const double hyperbolicRadius, std::vector<T> &circleDenizens) const {
 		getElementsInHyperbolicCircle(circleCenter, hyperbolicRadius, false, circleDenizens);
 	}
 
-	count getElementsProbabilistically(Point2D<double> euQuery, std::function<double(double)> prob, vector<T> &circleDenizens) {
+	count getElementsProbabilistically(Point2D<double> euQuery, std::function<double(double)> prob, std::vector<T> &circleDenizens) {
 		return root.getElementsProbabilistically(euQuery, prob, false, circleDenizens);
 	}
 
-	count getElementsProbabilistically(Point2D<double> euQuery, std::function<double(double)> prob, bool suppressLeft, vector<T> &circleDenizens) {
+	count getElementsProbabilistically(Point2D<double> euQuery, std::function<double(double)> prob, bool suppressLeft, std::vector<T> &circleDenizens) {
 		return root.getElementsProbabilistically(euQuery, prob, suppressLeft, circleDenizens);
 	}
 

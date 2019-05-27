@@ -92,14 +92,14 @@ TEST_F(GeneratorsBenchmark, benchmarkHyperbolicGeneratorWithSortedNodes) {
     double s = 1.0;
     double alpha = 1.0;
     double t = 1.0;
-    vector<double> angles(n);
-    vector<double> radii(n);
+    std::vector<double> angles(n);
+    std::vector<double> radii(n);
     double R = s*HyperbolicSpace::hyperbolicAreaToRadius(n);
     double r = HyperbolicSpace::hyperbolicRadiusToEuclidean(R);
     //sample points randomly
 
     HyperbolicSpace::fillPoints(angles, radii, s, alpha);
-    vector<index> permutation(n);
+    std::vector<index> permutation(n);
 
     index p = 0;
     std::generate(permutation.begin(), permutation.end(), [&p](){return p++;});
@@ -107,8 +107,8 @@ TEST_F(GeneratorsBenchmark, benchmarkHyperbolicGeneratorWithSortedNodes) {
     //can probably be parallelized easily, but doesn't bring much benefit
     Aux::Parallel::sort(permutation.begin(), permutation.end(), [&angles,&radii](index i, index j){return angles[i] < angles[j] || (angles[i] == angles[j] && radii[i] < radii[j]);});
 
-    vector<double> anglecopy(n);
-    vector<double> radiicopy(n);
+    std::vector<double> anglecopy(n);
+    std::vector<double> radiicopy(n);
 
 #pragma omp parallel for
     for (omp_index j = 0; j < static_cast<omp_index>(n); j++) {
@@ -150,8 +150,8 @@ TEST_F(GeneratorsBenchmark, benchmarkSequentialQuadtreeConstruction) {
     double s =1;
     double alpha = 1;
     double R = s*HyperbolicSpace::hyperbolicAreaToRadius(n);
-    vector<double> angles(n);
-    vector<double> radii(n);
+    std::vector<double> angles(n);
+    std::vector<double> radii(n);
     HyperbolicSpace::fillPoints(angles, radii, s, alpha);
 
     Quadtree<index> quad(HyperbolicSpace::hyperbolicRadiusToEuclidean(R),false,alpha,capacity);
