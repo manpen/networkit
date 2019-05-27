@@ -16,9 +16,6 @@
 #include <networkit/viz/Point.hpp>
 #include <networkit/auxiliary/Random.hpp>
 
-using std::vector;
-using std::abs;
-
 namespace NetworKit {
 
 class HyperbolicSpace {
@@ -33,7 +30,7 @@ public:
 	 *
 	 * Fill preallocated vectors with randomly sampled points in native coordinates
 	 */
-	static void fillPoints(vector<double> &angles, vector<double> &radii, double R, double alpha);
+	static void fillPoints(std::vector<double> &angles, std::vector<double> &radii, double R, double alpha);
 
 	/**
 	 * @param angles empty vector to hold angular coordinates of generated points
@@ -43,7 +40,7 @@ public:
 	 *
 	 * Fill preallocated vectors with randomly sampled points in native coordinates
 	 */
-	static void fillPoints(vector<double> &angles, vector<double> &radii, double minPhi, double maxPhi, double minR, double maxR, double alpha);
+	static void fillPoints(std::vector<double> &angles, std::vector<double> &radii, double minPhi, double maxPhi, double minR, double maxR, double alpha);
 
 	/**
 	 * @param firstangle angular coordinate of the first point
@@ -86,7 +83,7 @@ public:
 	/**
 	 * Convenience function for visualizations which expect coordinates as map<index,Point<float> >
 	 */
-	static std::map<index, Point<float> > polarToCartesian(const vector<double> &angles, const vector<double> &radii);
+	static std::map<index, Point<float> > polarToCartesian(const std::vector<double> &angles, const std::vector<double> &radii);
 
 	/**
 	 * @param a cartesian coordinates
@@ -160,11 +157,11 @@ public:
 			} else {
 				lowerBound = currentR;
 			}
-		} while (abs(getExpectedDegree(n, alpha, currentR) - k) > epsilon );
+		} while (std::abs(getExpectedDegree(n, alpha, currentR) - k) > epsilon );
 		return currentR;
 	}
 
-	static double getTargetRadius(double n, double m, double alpha=1, double T=0, double epsilon = 0.01) {
+	static double getTargetRadius(double n, double m, double alpha=1, double T=0, double epsilon = 0.01)  {
 		double result;
 		double plexp = 2*alpha+1;
 		double targetAvgDegree = (m/n)*2;
