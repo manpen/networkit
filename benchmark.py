@@ -64,7 +64,7 @@ with open('nkgen_bench.csv', 'w', newline='') as csvfile:
                 else:
                     print("  skipped: n >= %d" % skip)
 
-                writer.writerow({'host': hostname, 'algo': 'nkgen', 'iter': iter,
+                writer.writerow({'host': hostname, 'algo': 'nkgen_polylog', 'iter': iter,
                                  'T': T, 'PLE':ple, 'n':n, 'deg':deg,
                                  "edges": num_edges,
                                  'time':time_ms,"samplingTime": sampling_time, "preprocessTime": preprocess_time, "totalTime": total_time})
