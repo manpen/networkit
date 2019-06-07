@@ -18,7 +18,7 @@ def power10series(begin, end, steps_per_dec):
 
 TimeoutSeconds = 300
 Iterations = 5
-Ts = [0.0, 0.5, 0.9]
+Ts = [0.5, 0.9]
 PLEs = [2.2, 3.0]
 Ns = list(power10series(1e3, 1e8, 3))
 AvgDegs = [10, 100, 1000]
