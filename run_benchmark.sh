@@ -13,7 +13,7 @@ if [[ $string == *"found"* ]]; then
    git submodule update --init --recursive
 	echo "Build and install local networkit source"
 	pip3 install --upgrade pip
-	pip3 install cython
+	pip3 install cython ipython
 	pip3 install -e .
 fi
 
