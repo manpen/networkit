@@ -35,7 +35,7 @@ def runNkGen(n, deg, alpha, T):
 
     return [num_edges, sampling_time, preprocess_time, total_time]
 
-with open('nkgen_bench_polylog.csv', 'w', newline='') as csvfile:
+with open('nkgen_polylog_bench.csv', 'w', newline='') as csvfile:
     fields = ["host", "algo", "iter", "T", "PLE", "n", "deg", "time", "edges", "samplingTime", "preprocessTime", "totalTime"]
     writer = csv.DictWriter(csvfile, fieldnames=fields)
     writer.writeheader()
