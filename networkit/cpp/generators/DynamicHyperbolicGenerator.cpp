@@ -87,7 +87,7 @@ void DynamicHyperbolicGenerator::initializeQuadTree() {
 
 void DynamicHyperbolicGenerator::recomputeBands() {
 	//1.Generate bandRadius'
-	bandRadii = HyperbolicGenerator::getBandRadii(nodeCount, R);
+	bandRadii = HyperbolicGenerators::BandImplementation::getBandRadii(nodeCount, R);
 	INFO("Got Band Radii");
 	assert(bandRadii.size() > 1);
 	//2. Initialize empty bands
@@ -121,12 +121,18 @@ void DynamicHyperbolicGenerator::recomputeBands() {
 	INFO("Filled Bands");
 }
 
-Graph DynamicHyperbolicGenerator::getGraph() const {
+Graph DynamicHyperbolicGenerator::getGraph() {
 	/**
 	 * The next call is unnecessarily expensive, since it constructs a new QuadTree / bands.
 	 * Reduces code duplication, though.
 	 */
-	return HyperbolicGenerator().generate(angles, radii, R, T);
+
+	// We move our points temporarily into the generator and move them out again to prevent copying
+	auto gen = HyperbolicGenerator(std::move(angles), std::move(radii), R, HyperbolicGenerator::alphaToPLE(alpha, T), T);
+	auto graph = gen.generateKeepingInput();
+	angles = std::move(gen.getAngles());
+	radii = std::move(gen.getRadii());
+	return graph;
 }
 
 std::vector<Point<float> > DynamicHyperbolicGenerator::getCoordinates() const {
@@ -224,9 +230,9 @@ vector<index> DynamicHyperbolicGenerator::getNeighborsInBands(index i, bool both
 	for(index j = 0; j < bands.size(); j++){
 		if(bothDirections || bandRadii[j+1] > radii[i]){
 			double minTheta, maxTheta;
-			std::tie (minTheta, maxTheta) = HyperbolicGenerator::getMinMaxTheta(phi, r, bandRadii[j], R);
+			std::tie (minTheta, maxTheta) = HyperbolicGenerators::BandImplementation::getMinMaxTheta(phi, r, bandRadii[j], R);
 
-			vector<Point2D<double>> neighborCandidates = HyperbolicGenerator::getPointsWithinAngles(minTheta, maxTheta, bands[j], bandAngles[j]);
+			vector<Point2D<double>> neighborCandidates = HyperbolicGenerators::BandImplementation::getPointsWithinAngles(minTheta, maxTheta, bands[j], bandAngles[j]);
 
 			const count sSize = neighborCandidates.size();
 			for(index w = 0; w < sSize; w++){

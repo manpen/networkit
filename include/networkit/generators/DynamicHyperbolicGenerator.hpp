@@ -65,7 +65,7 @@ public:
 	 *
 	 * @return graph at the current state
 	 */
-	Graph getGraph() const;
+	Graph getGraph();
 
 	/**
 	 * Get coordinates in native representation
