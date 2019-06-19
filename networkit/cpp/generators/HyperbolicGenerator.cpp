@@ -1,267 +1,178 @@
 /*
  * HyperbolicGenerator.cpp
  *
- *      Authors: Mustafa zdayi and Moritz v. Looz (moritz.looz-corswarem@kit.edu)
- *
- * This generator contains algorithms described in two publications.
- *
- * For T=0, the relevant publication is
- * "Generating massive complex networks with hyperbolic geometry faster in practice" by
- * Moritz von Looz, Mustafa zdayi, Sren Laue and Henning Meyerhenke, presented at HPEC 2016.
- *
- * For T>0, it is
- * "Querying Probabilistic Neighborhoods in Spatial Data Sets Efficiently" by Moritz von Looz
- * and Henning Meyerhenke, presented at IWOCA 2016.
- *
- * The model of hyperbolic random graphs is presented in
- * "Hyperbolic geometry of complex networks. Physical Review E, 82:036106, Sep 2010." by
- *   Dmitri Krioukov, Fragkiskos Papadopoulos, Maksim Kitsak, Amin Vahdat, and Marian Boguna
+ *      Authors: Manuel Penschuck (networkit@manuel.jetzt)
  *
  */
 
 #include <cmath>
 
-#include <cstdlib>
-#include <random>
 #include <assert.h>
-#include <omp.h>
 #include <algorithm>
 
-#include <networkit/graph/GraphBuilder.hpp>
-#include <networkit/generators/HyperbolicGenerator.hpp>
-#include <networkit/generators/quadtree/Quadtree.hpp>
-#include <networkit/auxiliary/Random.hpp>
 #include <networkit/auxiliary/Parallel.hpp>
+
+#include <networkit/geometric/HyperbolicSpace.hpp>
+
+#include <networkit/generators/HyperbolicGenerator.hpp>
+#include <networkit/generators/HyperbolicGeneratorBand.hpp>
+#include <networkit/generators/HyperbolicGeneratorQuadTree.hpp>
+
 
 namespace NetworKit {
 
-/**
- * Construct a generator for n nodes and m edges
- */
-HyperbolicGenerator::HyperbolicGenerator(count n, double avgDegree, double plexp, double T) {
-	nodeCount = n;
-	if (plexp <= 2) throw std::runtime_error("Exponent of power-law degree distribution must be > 2");
-	if (T < 0 || T == 1) throw std::runtime_error("Temperature must be non-negative and not 1.");//Really necessary? Graphs with T=1 can be generated, only their degree is not controllable
-	if (avgDegree >= n) throw std::runtime_error("Average Degree must be at most n-1");
-	if (T < 1) {
-		alpha = 0.5*(plexp-1);
-	} else {
-		alpha = 0.5*(plexp-1)/T;
-	}
+namespace Hyperbolic {
 
-	R = HyperbolicSpace::getTargetRadius(n, n*avgDegree/2, alpha, T);
-	temperature=T;
-	initialize();
+// Constructors
+GeneratorBase::GeneratorBase(count n, AverageDegree deg, PowerlawExponent ple, double T) :
+    nodeCount(n),
+    alpha(estimateAlpha(ple.get(), T)),
+    temperature(T),
+    R(HyperbolicSpace::getTargetRadius(n, 0.5 * deg.get() * n, alpha)),
+    ple(ple.get()), preferPle(true),
+    avgDegree(deg.get()), preferAvgDegree(true),
+    angles(storageAngles),
+    radii(storageRadii)
+{
+    checkParameters();
 }
 
-void HyperbolicGenerator::initialize() {
-	if (temperature == 0) {
-		capacity = 1000;
-	} else {
-		capacity = 10;
-	}
-	theoreticalSplit = false;
-	threadtimers.resize(omp_get_max_threads());
-	balance = 0.5;
+GeneratorBase::GeneratorBase(count n, AverageDegree deg, Alpha a, double T) :
+    nodeCount(n),
+    alpha(a.get()),
+    temperature(T),
+    R(HyperbolicSpace::getTargetRadius(n, 0.5 * deg.get() * n, alpha)),
+    avgDegree(deg.get()), preferAvgDegree(true),
+    angles(storageAngles),
+    radii(storageRadii)
+{
+    checkParameters();
 }
 
-Graph HyperbolicGenerator::generate() {
-	return generate(nodeCount, R, alpha, temperature);
+GeneratorBase::GeneratorBase(count n, Radius rad, PowerlawExponent ple, double T) :
+    nodeCount(n),
+    alpha(estimateAlpha(ple.get(), T)),
+    temperature(T),
+    R(rad.get()),
+    ple(ple.get()), preferPle(true),
+    angles(storageAngles),
+    radii(storageRadii)
+{
+    checkParameters();
 }
 
-Graph HyperbolicGenerator::generate(count n, double R, double alpha, double T) {
-	assert(R > 0);
-	std::vector<double> angles(n);
-	std::vector<double> radii(n);
-
-	//sample points randomly
-	HyperbolicSpace::fillPoints(angles, radii, R, alpha);
-	std::vector<index> permutation(n);
-
-	index p = 0;
-	std::generate(permutation.begin(), permutation.end(), [&p](){return p++;});
-
-	//can probably be parallelized easily, but doesn't bring much benefit
-	Aux::Parallel::sort(permutation.begin(), permutation.end(), [&angles,&radii](index i, index j){return angles[i] < angles[j] || (angles[i] == angles[j] && radii[i] < radii[j]);});
-
-	std::vector<double> anglecopy(n);
-	std::vector<double> radiicopy(n);
-
-	#pragma omp parallel for
-	for (omp_index j = 0; j < static_cast<omp_index>(n); j++) {
-		anglecopy[j] = angles[permutation[j]];
-		radiicopy[j] = radii[permutation[j]];
-	}
-
-	INFO("Generated Points");
-	return generate(anglecopy, radiicopy, R, T);
+GeneratorBase::GeneratorBase(count n, Radius rad, Alpha a, double T) :
+    nodeCount(n),
+    alpha(a.get()),
+    temperature(T),
+    R(rad.get()),
+    angles(storageAngles),
+    radii(storageRadii)
+{
+    checkParameters();
 }
 
-Graph HyperbolicGenerator::generateCold(const std::vector<double> &angles, const std::vector<double> &radii, double R) {
-	const count n = angles.size();
-	assert(radii.size() == n);
-
-	for (index i = 0; i < n; i++) {
-		assert(radii[i] < R);
-	}
-
-	std::vector<index> permutation(n);
-	#pragma omp parallel for
-	for (omp_index i = 0; i < static_cast<omp_index>(n); i++) {
-		permutation[i] = i;
-	}
-
-	//can probably be parallelized easily, but doesn't bring much benefit
-	Aux::Parallel::sort(permutation.begin(), permutation.end(), [&angles,&radii](index i, index j){return angles[i] < angles[j] || (angles[i] == angles[j] && radii[i] < radii[j]);});
-
-	std::vector<double> bandRadii = getBandRadii(n, R);
-	//Initialize empty bands
-	std::vector<std::vector<Point2D<double>>> bands(bandRadii.size() - 1);
-	//Put points to bands
-	#pragma omp parallel for
-	for (omp_index j = 0; j < static_cast<omp_index>(bands.size()); j++){
-		for (index i = 0; i < n; i++){
-			double alias = permutation[i];
-			if (radii[alias] >= bandRadii[j] && radii[alias] <= bandRadii[j+1]){
-				bands[j].push_back(Point2D<double>(angles[alias], radii[alias], alias));
-			}
-		}
-	}
-
-	const count bandCount = bands.size();
-	const double coshR = cosh(R);
-	assert(radii.size() == n);
-
-	Aux::Timer bandTimer;
-	bandTimer.start();
-
-	//1.Extract band angles to use them later, can create a band class to handle this more elegantly
-	std::vector<std::vector<double>> bandAngles(bandCount);
-	#pragma omp parallel for
-	for (omp_index i=0; i < static_cast<omp_index>(bandCount); i++){
-		const count currentBandSize = bands[i].size();
-		bandAngles[i].resize(currentBandSize);
-		for(index j=0; j < currentBandSize; j++) {
-			bandAngles[i][j] = bands[i][j].getX();
-		}
-		if (!std::is_sorted(bandAngles[i].begin(), bandAngles[i].end())) {
-			throw std::runtime_error("Points in bands must be sorted.");
-		}
-	}
-	bandTimer.stop();
-	INFO("Extracting band angles took ", bandTimer.elapsedMilliseconds(), " milliseconds.");
-
-	//2.Insert edges
-	Aux::Timer timer;
-	timer.start();
-	std::vector<double> empty;
-	GraphBuilder result(n, false, false);
-
-	#pragma omp parallel
-	{
-		index id = omp_get_thread_num();
-		threadtimers[id].start();
-		#pragma omp for schedule(guided) nowait
-		for (omp_index i = 0; i < static_cast<omp_index>(n); i++) {
-			const double coshr = cosh(radii[i]);
-			const double sinhr = sinh(radii[i]);
-			count expectedDegree = (4/PI)*n*exp(-(radii[i])/2);
-			std::vector<index> near;
-			near.reserve(expectedDegree*1.1);
-			Point2D<double> pointV(angles[i], radii[i], i);
-			for(index j = 0; j < bandCount; j++){
-				if(directSwap || bandRadii[j+1] > radii[i]){
-					double minTheta, maxTheta;
-					std::tie (minTheta, maxTheta) = getMinMaxTheta(angles[i], radii[i], bandRadii[j], R);
-					//minTheta = 0;
-					//maxTheta = 2*PI;
-					std::vector<Point2D<double>> neighborCandidates = getPointsWithinAngles(minTheta, maxTheta, bands[j], bandAngles[j]);
-
-					const count sSize = neighborCandidates.size();
-					for(index w = 0; w < sSize; w++){
-						double deltaPhi = PI - std::abs(PI-std::abs(angles[i] - neighborCandidates[w].getX()));
-						if (coshr*cosh(neighborCandidates[w].getY())-sinhr*sinh(neighborCandidates[w].getY())*cos(deltaPhi) <= coshR) {
-							if (neighborCandidates[w].getIndex() != i){
-								near.push_back(neighborCandidates[w].getIndex());
-							}
-						}
-					}
-				}
-			}
-			if (directSwap) {
-				auto newend = std::remove(near.begin(), near.end(), i); //no self loops!
-				if (newend != near.end()) {
-					assert(newend+1 == near.end());
-					assert(*(newend)==i);
-					near.pop_back();//std::remove doesn't remove element but swaps it to the end
-				}
-				result.swapNeighborhood(i, near, empty, false);
-			} else {
-				for (index j : near) {
-					if (j >= n) ERROR("Node ", j, " prospective neighbour of ", i, " does not actually exist. Oops.");
-					if(radii[j] > radii[i] || (radii[j] == radii[i] && angles[j] < angles[i]))
-						result.addHalfEdge(i,j);
-				}
-			}
-		}
-		threadtimers[id].stop();
-	}
-	timer.stop();
-	INFO("Generating Edges took ", timer.elapsedMilliseconds(), " milliseconds.");
-	return result.toGraph(!directSwap, true);
+GeneratorBase::GeneratorBase(const std::vector<double>& angles, const std::vector<double>& radii, Radius R, PowerlawExponent ple, double T) :
+    nodeCount(angles.size()),
+    alpha(estimateAlpha(ple.get(), T)),
+    temperature(T),
+    R(R.get()),
+    ple(ple.get()), preferPle(true),
+    angles(std::move(angles)),
+    radii(std::move(radii))
+{
+    checkParameters();
 }
 
-Graph HyperbolicGenerator::generate(const std::vector<double> &angles, const std::vector<double> &radii, double R, double T) {
-	if (T < 0) throw std::runtime_error("Temperature cannot be negative.");
-	if (T == 0) return generateCold(angles, radii, R);
-	assert(T > 0);
-
-	/**
-	 * fill Quadtree
-	 */
-	Aux::Timer timer;
-	timer.start();
-	index n = angles.size();
-	assert(radii.size() == n);
-
-	assert(alpha > 0);
-	Quadtree<index,false> quad(R, theoreticalSplit, alpha, capacity, balance);
-
-	for (index i = 0; i < n; i++) {
-		assert(radii[i] < R);
-		quad.addContent(i, angles[i], radii[i]);
-	}
-
-	quad.trim();
-	timer.stop();
-	INFO("Filled Quadtree, took ", timer.elapsedMilliseconds(), " milliseconds.");
-
-	assert(quad.size() == n);
-
-	bool anglesSorted = std::is_sorted(angles.begin(), angles.end());
-
-	//now define lambda
-	double beta = 1/T;
-	assert(beta == beta);
-	auto edgeProb = [beta, R](double distance) -> double {return 1 / (exp(beta*(distance-R)/2)+1);};
-
-	//get Graph
-	GraphBuilder result(n, false, false);//no direct swap with probabilistic graphs
-	count totalCandidates = 0;
-	#pragma omp parallel for
-	for (omp_index i = 0; i < static_cast<omp_index>(n); i++) {
-		std::vector<index> near;
-		totalCandidates += quad.getElementsProbabilistically(HyperbolicSpace::polarToCartesian(angles[i], radii[i]), edgeProb, anglesSorted, near);
-		for (index j : near) {
-			if (j >= n) ERROR("Node ", j, " prospective neighbour of ", i, " does not actually exist. Oops.");
-			if (j > i) {
-				result.addHalfEdge(i, j);
-			}
-		}
-
-	}
-	DEBUG("Candidates tested: ", totalCandidates);
-	return result.toGraph(true, true);
-
+GeneratorBase::GeneratorBase(const std::vector<double>& angles, const std::vector<double>& radii, Radius R, Alpha a, double T) :
+    nodeCount(angles.size()),
+    alpha(a.get()),
+    temperature(T),
+    R(R.get()),
+    angles(std::move(angles)),
+    radii(std::move(radii))
+{
+    checkParameters();
 }
+
+void GeneratorBase::checkParameters() {
+    if (alpha <= 0.5)
+        throw std::runtime_error("Alpha has to exceed 0.5");
+
+    if (temperature < 0 || temperature == 1)
+        throw std::runtime_error("Temperature must be non-negative and not 1.");
+
+#ifndef NDEBUG
+        if (!std::all_of(angles.cbegin(), angles.cend(), [] (double x) {return 0.0 <= x && x < 2 * PI;}))
+            throw std::runtime_error("Angles must be in the interval [0: 2*Pi)");
+
+        if (!std::all_of(radii.cbegin(), radii.cend(), [this] (double r) {return 0.0 <= r && r < R;})) // TODO: replace capture with R=R in C++14
+            throw std::runtime_error("Radii must be in the interval [0: R)");
+#endif
 }
+
+void GeneratorBase::samplePoints() {
+    if (&radii != &storageRadii)
+        throw std::runtime_error("samplePoints only allowed if no points were passed via constructor");
+
+    storageAngles.resize(nodeCount);
+    storageRadii.resize(nodeCount);
+
+    // need to generate points
+    HyperbolicSpace::fillPoints(storageAngles, storageRadii, R, alpha);
+}
+
+} // namespace Hyperbolic
+
+HyperbolicGenerator::HyperbolicGenerator(count n, double deg, double ple, double T)
+    : impl(T > 0 ? dynamic_cast<Hyperbolic::GeneratorBase*>(new HyperbolicGeneratorQuadTree(n, Hyperbolic::AverageDegree{deg}, Hyperbolic::PowerlawExponent{ple}, T))
+                 : dynamic_cast<Hyperbolic::GeneratorBase*>(new HyperbolicGeneratorBand    (n, Hyperbolic::AverageDegree{deg}, Hyperbolic::PowerlawExponent{ple}, T)))
+{}
+
+HyperbolicGenerator::HyperbolicGenerator(count n, Hyperbolic::AverageDegree deg, Hyperbolic::PowerlawExponent exp, double T)
+    : impl(T > 0 ? dynamic_cast<Hyperbolic::GeneratorBase*>(new HyperbolicGeneratorQuadTree(n, deg, exp, T))
+                 : dynamic_cast<Hyperbolic::GeneratorBase*>(new HyperbolicGeneratorBand    (n, deg, exp, T)))
+{}
+
+HyperbolicGenerator::HyperbolicGenerator(count n, Hyperbolic::AverageDegree deg, Hyperbolic::Alpha alpha,          double T)
+    : impl(T > 0 ? dynamic_cast<Hyperbolic::GeneratorBase*>(new HyperbolicGeneratorQuadTree(n, deg, alpha, T))
+                 : dynamic_cast<Hyperbolic::GeneratorBase*>(new HyperbolicGeneratorBand    (n, deg, alpha, T)))
+{}
+
+HyperbolicGenerator::HyperbolicGenerator(count n, Hyperbolic::Radius rad,        Hyperbolic::PowerlawExponent exp, double T)
+    : impl(T > 0 ? dynamic_cast<Hyperbolic::GeneratorBase*>(new HyperbolicGeneratorQuadTree(n, rad, exp, T))
+                 : dynamic_cast<Hyperbolic::GeneratorBase*>(new HyperbolicGeneratorBand    (n, rad, exp, T)))
+{}
+
+HyperbolicGenerator::HyperbolicGenerator(count n, Hyperbolic::Radius rad,        Hyperbolic::Alpha alpha,          double T)
+    : impl(T > 0 ? dynamic_cast<Hyperbolic::GeneratorBase*>(new HyperbolicGeneratorQuadTree(n, rad, alpha, T))
+                 : dynamic_cast<Hyperbolic::GeneratorBase*>(new HyperbolicGeneratorBand    (n, rad, alpha, T)))
+{}
+
+HyperbolicGenerator::HyperbolicGenerator(const std::vector<double>& angles, const std::vector<double>& radii, Hyperbolic::Radius R, Hyperbolic::PowerlawExponent exp, double T)
+    : impl(T > 0 ? dynamic_cast<Hyperbolic::GeneratorBase*>(new HyperbolicGeneratorQuadTree(angles, radii, R, exp, T))
+                 : dynamic_cast<Hyperbolic::GeneratorBase*>(new HyperbolicGeneratorBand    (angles, radii, R, exp, T)))
+{}
+
+HyperbolicGenerator::HyperbolicGenerator(const std::vector<double>& angles, const std::vector<double>& radii, Hyperbolic::Radius R, Hyperbolic::Alpha alpha,          double T)
+    : impl(T > 0 ? dynamic_cast<Hyperbolic::GeneratorBase*>(new HyperbolicGeneratorQuadTree(angles, radii, R, alpha, T))
+                 : dynamic_cast<Hyperbolic::GeneratorBase*>(new HyperbolicGeneratorBand    (angles, radii, R, alpha, T)))
+{}
+
+std::vector<double> HyperbolicGenerator::getElapsedMilliseconds() const {
+    dynamic_cast<HyperbolicGeneratorBand&>(*impl.get()).getElapsedMilliseconds();
+}
+
+void HyperbolicGenerator::setLeafCapacity(count capacity) {
+    dynamic_cast<HyperbolicGeneratorQuadTree&>(*impl.get()).setLeafCapacity(capacity);
+}
+
+void HyperbolicGenerator::setTheoreticalSplit(bool split) {
+    dynamic_cast<HyperbolicGeneratorQuadTree&>(*impl.get()).setTheoreticalSplit(split);
+}
+
+void HyperbolicGenerator::setBalance(double balance) {
+    dynamic_cast<HyperbolicGeneratorQuadTree&>(*impl.get()).setBalance(balance);
+}
+
+} // namespace NetworKit
