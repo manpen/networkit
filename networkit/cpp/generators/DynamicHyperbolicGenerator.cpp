@@ -8,6 +8,7 @@
 #include <cmath>
 
 #include <networkit/generators/DynamicHyperbolicGenerator.hpp>
+#include <networkit/generators/hyperbolic/BandImplementation.hpp>
 #include <networkit/generators/HyperbolicGenerator.hpp>
 #include <networkit/geometric/HyperbolicSpace.hpp>
 #include <networkit/auxiliary/Parallel.hpp>

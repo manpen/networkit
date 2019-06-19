@@ -268,7 +268,7 @@ TEST_F(GeneratorsGTest, testDynamicHyperbolicGeneratorOnMovedNodes) {
 	DynamicHyperbolicGenerator dynGen(angles, radii, R, alpha, T, movedShare, moveDistance);
 
 	//generate starting graph
-	Graph G = HyperbolicGenerator().generate(angles, radii, R);
+	Graph G = HyperbolicGenerator(angles, radii, R, HyperbolicGenerator::alphaToPLE(alpha, T), T).generate();
 	count initialEdgeCount = G.numberOfEdges();
 	count expected = n*HyperbolicSpace::getExpectedDegree(n, alpha, R)*0.5;
 	EXPECT_NEAR(initialEdgeCount, expected, expected/5);
@@ -296,7 +296,7 @@ TEST_F(GeneratorsGTest, testDynamicHyperbolicGeneratorOnMovedNodes) {
 	//update moved nodes
 	angles = getAngles(dynGen);
 	radii = getRadii(dynGen);
-	Graph comparison = HyperbolicGenerator().generate(angles, radii, R);
+	Graph comparison = HyperbolicGenerator(angles, radii, R, HyperbolicGenerator::alphaToPLE(alpha, T), T).generate();
 	EXPECT_EQ(G.numberOfEdges(), comparison.numberOfEdges());
 
 	//heuristic criterion: Number of edges may change, but should not change much

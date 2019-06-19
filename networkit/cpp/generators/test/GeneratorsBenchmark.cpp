@@ -14,6 +14,7 @@
 #include <networkit/auxiliary/Log.hpp>
 #include <networkit/auxiliary/Parallel.hpp>
 #include <networkit/auxiliary/Parallelism.hpp>
+#include <networkit/auxiliary/Timer.hpp>
 
 #include <networkit/generators/ErdosRenyiEnumerator.hpp>
 #include <networkit/generators/HyperbolicGenerator.hpp>
@@ -89,9 +90,10 @@ TEST_F(GeneratorsBenchmark, benchmarkHyperbolicGenerator) {
 
 TEST_F(GeneratorsBenchmark, benchmarkHyperbolicGeneratorWithSortedNodes) {
     count n = 100000;
-    double s = 1.0;
-    double alpha = 1.0;
-    double t = 1.0;
+    const double s = 1.0;
+    const double alpha = 1.0;
+    const double T = 0.9;
+    const auto plexp = HyperbolicGenerator::alphaToPLE(alpha, T);
     std::vector<double> angles(n);
     std::vector<double> radii(n);
     double R = s*HyperbolicSpace::hyperbolicAreaToRadius(n);
@@ -105,7 +107,8 @@ TEST_F(GeneratorsBenchmark, benchmarkHyperbolicGeneratorWithSortedNodes) {
     std::generate(permutation.begin(), permutation.end(), [&p](){return p++;});
 
     //can probably be parallelized easily, but doesn't bring much benefit
-    Aux::Parallel::sort(permutation.begin(), permutation.end(), [&angles,&radii](index i, index j){return angles[i] < angles[j] || (angles[i] == angles[j] && radii[i] < radii[j]);});
+    Aux::Parallel::sort(permutation.begin(), permutation.end(), [&angles,&radii](index i, index j) {
+         return std::tie(angles[i], radii[i]) < std::tie(angles[j], radii[j]);});
 
     std::vector<double> anglecopy(n);
     std::vector<double> radiicopy(n);
@@ -116,7 +119,7 @@ TEST_F(GeneratorsBenchmark, benchmarkHyperbolicGeneratorWithSortedNodes) {
         radiicopy[j] = radii[permutation[j]];
     }
 
-    Graph G = HyperbolicGenerator().generate(anglecopy, radiicopy, r, R*t);
+    Graph G = HyperbolicGenerator(std::move(anglecopy), std::move(radiicopy), plexp, R, T).generate();
     EXPECT_EQ(G.numberOfNodes(), n);
 }
 
@@ -167,7 +170,6 @@ TEST_F(GeneratorsBenchmark, benchmarkHyperbolicGeneratorMechanicGraphs) {
     double k = 6;
     count m = n*k/2;
     HyperbolicGenerator gen(n, k, 3, 0.14);
-    gen.setLeafCapacity(10);
     Graph G = gen.generate();
     EXPECT_NEAR(G.numberOfEdges(), m, m/10);
 }

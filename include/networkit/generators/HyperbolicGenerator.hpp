@@ -2,209 +2,110 @@
  * HyperbolicGenerator.h
  *
  *  Created on: 20.05.2014
- *      Author: Moritz v. Looz (moritz.looz-corswarem@kit.edu)
+ *      Author: Moritz v. Looz (moritz.looz-corswarem@kit.edu), Manuel Penschuck (networkit@manuel.jetzt)
  */
 
 #ifndef HYPERBOLICGENERATOR_H_
 #define HYPERBOLICGENERATOR_H_
 
-#include <cmath>
-
 #include <vector>
-#include <networkit/geometric/HyperbolicSpace.hpp>
+
+#include <networkit/graph/Graph.hpp>
 #include <networkit/generators/StaticGraphGenerator.hpp>
-#include <networkit/auxiliary/Timer.hpp>
-#include <networkit/generators/quadtree/Quadtree.hpp>
 
 namespace NetworKit {
 
+/**
+ * Generator for Random Hyperbolic Graphs
+ *
+ * This class is a dispatch which tries to identify the most suited implementation
+ * for the requested set of parameters.
+ */
 class HyperbolicGenerator: public StaticGraphGenerator {
-	friend class DynamicHyperbolicGenerator;
 public:
-
 	/**
 	 * @param[in] n Number of nodes
 	 * @param[in] k Target average degree
-	 * @param[in] exp Target exponent of power-law distribution
+	 * @param[in] plexp Target exponent of power-law distribution
 	 * @param[in] T Temperature
 	 */
-	HyperbolicGenerator(count n=10000, double avgDegree=6, double exp=3, double T=0);
+	HyperbolicGenerator(count n=10000, double avgDegree=6, double plexp=3, double T=0);
 
 	/**
-	 * @param[in] angles Pointer to angles of node positions
-	 * @param[in] radii Pointer to radii of node positions
-	 * @param[in] r radius of poincare disk to place nodes in
-	 * @param[in] thresholdDistance Edges are added for nodes closer to each other than this threshold
-	 * @return Graph to be generated according to parameters
+	 * @param[in] angles Angular coordinates of points (have to be in the interval [0:2Pi))
+	 * @param[in] radii  Polar coordinates of points (have to be in the interval [0:R))
+	 * @param[in] R Target radius of hyperbolic plane
+	 * @param[in] plexp Target exponent of power-law distribution (here used only as a tuning parameter)
+	 * @param[in] T Temperature
 	 */
-	Graph generate(const std::vector<double> &angles, const std::vector<double> &radii, double R, double T=0);
-	Graph generateCold(const std::vector<double> &angles, const std::vector<double> &radii, double R);
+	HyperbolicGenerator(std::vector<double> angles, std::vector<double> radii, double R, double plexp, double T);
 
-	/**
-	 * @return Graph to be generated according to parameters specified in constructor.
-	 */
-	Graph generate();
+	/// @return the expected powerlaw exponent based on the alpha parameter and the temperature T
+	static constexpr double alphaToPLE(double alpha, double T) {
+		return (T < 1) ? 2.0 * alpha + 1   : 2.0 * T * alpha + 1;
+	}
 
-	/**
-	 * Set the capacity of a quadtree leaf.
-	 *
-	 * @param capacity Tuning parameter, default value is 1000
-	 */
-	void setLeafCapacity(count capacity) {
-		this->capacity = capacity;
+	/// @return the alpha parameter based on the requested powerlaw exponent plexp and the temperature T
+	static constexpr double PLEToAlpha(double plexp, double T) {
+		return (T < 1) ? 0.5 * (plexp - 1) : 0.5 * (plexp - 1) / T;
+	}
+
+	/// @return Graph to be generated according to parameters specified in constructor freeing memory by deleting the input point set.
+	Graph generate() override {
+		return generate(false);
+	}
+
+	/// @return Graph to be generated according to parameters specified in constructor keeping the input point set.
+	Graph generateKeepingInput() {
+		return generate(true);
+	}
+
+	/// @return Model Parameter Alpha (i.e., the displacement parameter)
+	double getAlpha() const noexcept {
+		return alpha;
+	}
+
+	/// @return Model Parameter T (i.e., the temperature)
+	double getT() const noexcept {
+		return temperature;
+	}
+
+	/// @return Model Paramter R (i.e., the target radius)
+	double getR() const noexcept {
+		return R;
 	}
 
 	/**
-	 * When using a theoretically optimal split, the quadtree will be flatter, but running time usually longer.
-	 * @param split Whether to use the theoretically optimal split. Defaults to false
+	 * @return  Angles used to generate the graph
+	 * @warning The data is destroyed if generate is called with keep_input = false (default).
 	 */
-	void setTheoreticalSplit(bool split) {
-		this->theoreticalSplit = split;
+	const std::vector<double>& getAngles() const noexcept {
+		return angles;
 	}
 
-	void setBalance(double balance) {
-		this->balance = balance;
+	std::vector<double>& getAngles() noexcept {
+		return angles;
 	}
 
-	std::vector<double> getElapsedMilliseconds() const {
-		std::vector<double> result(threadtimers.size());
-		for (index i = 0; i < result.size(); i++) {
-			result[i] = threadtimers[i].elapsedMilliseconds();
-		}
-		return result;
+	/**
+	 * @return  Weights used to generate the graph
+	 * @warning The data is destroyed if generate is called with keep_input = false (default).
+	 */
+	const std::vector<double>& getRadii() const noexcept {
+		return radii;
+	}
+
+	std::vector<double>& getRadii() noexcept {
+		return radii;
+	}
+
+	/// @return Expected powerlaw exponent of the generated graph
+	double getPowerlawExponent() const noexcept {
+		return plexp;
 	}
 
 private:
-
-	/**
-	 * Set tuning parameters to their default values
-	 */
-	void initialize();
-
-	Graph generate(count n, double R, double alpha, double T = 0);
-
-	static std::vector<std::vector<double> > getBandAngles(const std::vector<std::vector<Point2D<double>>> &bands) {
-		std::vector<std::vector<double>> bandAngles(bands.size());
-		#pragma omp parallel for
-		for (omp_index i=0; i < static_cast<omp_index>(bands.size()); i++){
-			const count currentBandSize = bands[i].size();
-			bandAngles[i].resize(currentBandSize);
-			for(index j=0; j < currentBandSize; j++) {
-				bandAngles[i][j] = bands[i][j].getX();
-			}
-		}
-		return bandAngles;
-	}
-
-	static std::vector<double> getBandRadii(int n, double R, double seriesRatio = 0.9) {
-		/*
-		* We assume band differences form a geometric series.
-		* Thus, there is a constant ratio(r) between band length differences
-		* i.e (c2-c1)/(c1-c0) = (c3-c2)/(c2-c1) = r
-		*/
-		std::vector<double> bandRadius;
-		bandRadius.push_back(0);
-		double a = R*(1-seriesRatio)/(1-pow(seriesRatio, log(n)));
-		const double logn = log(n);
-
-		for (int i = 1; i < logn; i++){
-			double c_i = a*((1-pow(seriesRatio, i))/(1-seriesRatio));
-			bandRadius.push_back(c_i);
-		}
-		bandRadius.push_back(R);
-		return bandRadius;
-	}
-
-	static std::tuple<double, double> getMinMaxTheta(double angle, double radius, double cLow, double thresholdDistance) {
-	  /*
-		  Calculates the angles that are enclosing the intersection of the
-		  hyperbolic disk that is around point v and the bands.
-		  Calculation is as follows:
-		  1. For the most inner band, return [0, 2pi]
-		  2. For other bands, consider the point P which lies on the tangent from origin to the disk of point v.
-		  Its radial coordinates would be(cHigh, point[1]+deltaTheta). We're looking for the deltaTheta.
-		  We know the distance from point v to P is R. Thus, we can solve the hyperbolic distance of (v, P)
-		  for deltaTheta. Then, thetaMax is simply point[1] + deltaTheta and thetaMin is point[1] - deltaTheta
-	  */
-
-	  //Most innerband is defined by cLow = 0
-	  double minTheta, maxTheta;
-	  if (cLow == 0)
-	  return std::make_tuple(0.0, 2* PI);
-
-	  double a = (cosh(radius)*cosh(cLow) - cosh(thresholdDistance))/(sinh(radius)*sinh(cLow));
-	  //handle floating point error
-	  if(a < -1)
-		a = -1;
-	  else if(a > 1)
-		a = 1;
-	  a = acos(a);
-	  maxTheta = angle + a;
-	  minTheta = angle - a;
-	  return std::make_tuple(minTheta, maxTheta);
-	}
-
-	static std::vector<Point2D<double>> getPointsWithinAngles(double minTheta, double maxTheta, const std::vector<Point2D<double>> &band, std::vector<double> &bandAngles){
-		/**
-		Returns the list of points, w, that lies within minTheta and maxTheta
-		in the supplied band(That area is called as slab)
-		*/
-		//TODO: There should be a better way to write the whole thing. Find it.
-		//TODO: This can be done faster. Instead of returning the copying to slab array, just return the indexes and iterate over the band array
-		assert(band.size() == bandAngles.size());
-
-		std::vector<Point2D<double>> slab;
-
-		std::vector<double>::iterator low;
-		std::vector<double>::iterator high;
-
-		if(minTheta == -2*PI)
-			minTheta = 0;
-		//Case 1: We do not have overlap 2pi, simply put all the points between min and max to the list
-		if(maxTheta <= 2*PI && minTheta >= 0){
-			low = std::lower_bound(bandAngles.begin(), bandAngles.end(), minTheta);
-			high = std::upper_bound(bandAngles.begin(), bandAngles.end(), maxTheta);
-			std::vector<Point2D<double>>::const_iterator first = band.begin() + (low - bandAngles.begin());
-			std::vector<Point2D<double>>::const_iterator last = band.begin() + (high - bandAngles.begin());
-			//Q: Does this operation increases the complexity ? It is linear in times of high - low
-			//Does not increase the complexity, since we have to check these points anyway
-			slab.insert(slab.end(), first, last);
-		}
-		//Case 2: We have 'forward' overlap at 2pi, that is maxTheta > 2pi
-		else if (maxTheta > 2*PI){
-			//1. Get points from minTheta to 2pi
-			low = std::lower_bound(bandAngles.begin(), bandAngles.end(), minTheta);
-			high = std::upper_bound(bandAngles.begin(), bandAngles.end(), 2*PI);
-			std::vector<Point2D<double>>::const_iterator first = band.begin() + (low - bandAngles.begin());
-			std::vector<Point2D<double>>::const_iterator last = band.begin() + (high - bandAngles.begin());
-			slab.insert(slab.end(), first, last);
-
-			//2. Get points from 0 to maxTheta%2pi
-			low = std::lower_bound(bandAngles.begin(), bandAngles.end(), 0);
-			maxTheta = fmod(maxTheta, (2*PI));
-			high = std::upper_bound(bandAngles.begin(), bandAngles.end(), maxTheta);
-			std::vector<Point2D<double>>::const_iterator first2 = band.begin() + (low - bandAngles.begin());
-			std::vector<Point2D<double>>::const_iterator last2 = band.begin() + (high - bandAngles.begin());
-			slab.insert(slab.end(), first2, last2);
-		}
-		//Case 3: We have 'backward' overlap at 2pi, that is minTheta < 0
-		else if (minTheta < 0){
-			//1. Get points from 2pi + minTheta to 2pi
-			minTheta = (2*PI) + minTheta;
-			low = std::lower_bound(bandAngles.begin(), bandAngles.end(), minTheta);
-			high = std::upper_bound(bandAngles.begin(), bandAngles.end(), 2*PI);
-			std::vector<Point2D<double>>::const_iterator first = band.begin() + (low - bandAngles.begin());
-			std::vector<Point2D<double>>::const_iterator last = band.begin() + (high - bandAngles.begin());
-			slab.insert(slab.end(), first, last);
-			//2. Get points from 0 to maxTheta
-			low = std::lower_bound(bandAngles.begin(), bandAngles.end(), 0);
-			high = std::upper_bound(bandAngles.begin(), bandAngles.end(), maxTheta);
-			std::vector<Point2D<double>>::const_iterator first2 = band.begin() + (low - bandAngles.begin());
-			std::vector<Point2D<double>>::const_iterator last2 = band.begin() + (high - bandAngles.begin());
-			slab.insert(slab.end(), first2, last2);
-		}
-		return slab;
-	}
+	Graph generate(bool keepInput);
 
 	/**
 	 * graph parameters
@@ -212,20 +113,13 @@ private:
 	count nodeCount;
 	double R;
 	double alpha;
+	double plexp;
 	double temperature;
 
-	/**
-	 * tuning parameters
-	 */
-	count capacity;
-	bool theoreticalSplit;
-	double balance = 0.5;
-	static const bool directSwap = false;
-
-	/**
-	 * times
-	 */
-	std::vector<Aux::Timer> threadtimers;
+	std::vector<double> angles;
+	std::vector<double> radii;
 };
-}
+
+} // namespace NetworKit
+
 #endif /* HYPERBOLICGENERATOR_H_ */

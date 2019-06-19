@@ -16,6 +16,8 @@ networkit_add_module(generators
     ErdosRenyiGenerator.cpp
     HavelHakimiGenerator.cpp
     HyperbolicGenerator.cpp
+    hyperbolic/BandImplementation.cpp
+    hyperbolic/QuadTreeImplementation.cpp
     LFRGenerator.cpp
     MocnikGenerator.cpp
     MocnikGeneratorBasic.cpp
