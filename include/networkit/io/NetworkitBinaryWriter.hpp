@@ -1,7 +1,7 @@
 /*
- * NetworkitBinaryWriter.h
+ * NetworkitBinaryWriter.hpp
  *
- *@author Charmaine Ndolo <charmaine.ndolo@b-tu.de>
+ * @author Charmaine Ndolo <charmaine.ndolo@b-tu.de>
  */
 
 #ifndef NETWORKIT_BINARY_WRITER_H
@@ -18,12 +18,12 @@ namespace NetworKit {
  * Writes a graph in the custom Networkit format documented in cpp/io/NetworkitGraph.md
  */
 
-class NetworkitBinaryWriter : public GraphWriter {
+class NetworkitBinaryWriter final : public GraphWriter {
 
 public:
 	NetworkitBinaryWriter(uint64_t chunks = 32);
 
-	void write(const Graph& G, const std::string& path) override;
+	void write(const Graph &G, const std::string &path) const override;
 
 private:
 	static size_t encode(uint64_t value, uint8_t* buffer);

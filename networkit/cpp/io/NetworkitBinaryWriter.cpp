@@ -1,15 +1,17 @@
 /*
  * NetworkitBinaryWriter.cpp
  *
- *@author Charmaine Ndolo <charmaine.ndolo@b-tu.de>
+ * @author Charmaine Ndolo <charmaine.ndolo@b-tu.de>
  */
 
-#include <networkit/io/NetworkitBinaryWriter.hpp>
+#include <cstring>
+#include <fstream>
+
 #include <networkit/auxiliary/Enforce.hpp>
 #include <networkit/io/NetworkitBinaryGraph.hpp>
+#include <networkit/io/NetworkitBinaryWriter.hpp>
+
 #include <tlx/math/clz.hpp>
-#include <fstream>
-#include <cstring>
 
 namespace NetworKit {
 
@@ -42,7 +44,7 @@ uint64_t NetworkitBinaryWriter::encodeZigzag(int64_t value) {
 	return (value << 1) ^ (value >> 31);
 }
 
-void NetworkitBinaryWriter::write(const Graph &G, const std::string& path) {
+void NetworkitBinaryWriter::write(const Graph &G, const std::string &path) const {
 
 	std::ofstream outfile(path, std::ios::binary);
 	Aux::enforceOpened(outfile);
@@ -69,9 +71,10 @@ void NetworkitBinaryWriter::write(const Graph &G, const std::string& path) {
 		outfile.write(reinterpret_cast<char*>(&header.offsetWeights), sizeof(uint64_t));
 	};
 
-	nodes = G.numberOfNodes();
-	if (nodes < chunks) {
-		chunks = nodes;
+	count nNodes = G.numberOfNodes();
+	count nChunks = chunks;
+	if (nNodes < chunks) {
+		nChunks = nNodes;
 		INFO("reducing chunks to ", chunks, " chunks");
 	}
 
@@ -79,11 +82,11 @@ void NetworkitBinaryWriter::write(const Graph &G, const std::string& path) {
 	std::vector<uint64_t> firstInChunk;
 	firstInChunk.push_back(0);
 	uint64_t firstNode = 0;
-	for(uint64_t c = 1; c < chunks; c++) {
-		firstNode += (nodes/chunks);
+	for(uint64_t c = 1; c < nChunks; c++) {
+		firstNode += (nNodes/nChunks);
 		firstInChunk.push_back(firstNode);
 	}
-	firstInChunk.push_back(nodes);
+	firstInChunk.push_back(nNodes);
 
 	// Compute encoded size of arrays and store in vector.
 	uint64_t adjSize = 0;
@@ -92,14 +95,14 @@ void NetworkitBinaryWriter::write(const Graph &G, const std::string& path) {
 	std::vector<uint64_t> nrInNbrs;
 	std::vector<size_t> adjOffsets;	//Prefix sum of size encoded adj arrays
 	std::vector<size_t> transpOffsets;	//Prefix sum of encoded transposed adj arrays
-	for(uint64_t c = 0; c < chunks; c++) {
+	for(uint64_t c = 0; c < nChunks; c++) {
 		for(uint64_t n = firstInChunk[c]; n < firstInChunk[c+1]; n++) {
 			uint64_t outNbrs = 0;
 			uint64_t inNbrs = 0;
 			uint8_t tmp [10];
 			if(!G.isDirected()){
 				G.forNeighborsOf(n,[&](node v) {
-					if(v <= n) { 
+					if(v <= n) {
 						outNbrs++;
 						adjSize += encode(v, tmp);
 					} else if (v >= n) {
@@ -133,14 +136,14 @@ void NetworkitBinaryWriter::write(const Graph &G, const std::string& path) {
 	strncpy(header.magic,"nkbg001",8);
 	header.checksum = 0;
 	setFeatures();
-	header.nodes = nodes;
-	header.chunks = chunks;
+	header.nodes = nNodes;
+	header.chunks = nChunks;
 	header.offsetBaseData = sizeof(nkbg::Header);
 	header.offsetAdjLists = header.offsetBaseData
-			+ nodes * sizeof(uint8_t) // nodeFlags.
-			+ (chunks - 1) * sizeof(uint64_t); // firstVertex.
+			+ nNodes * sizeof(uint8_t) // nodeFlags.
+			+ (nChunks - 1) * sizeof(uint64_t); // firstVertex.
 	header.offsetAdjTranspose = header.offsetAdjLists
-			+ (chunks -1) * sizeof(uint64_t) // adjOffsets
+			+ (nChunks - 1) * sizeof(uint64_t) // adjOffsets
 			+ sizeof(uint64_t) // adjListSize
 			+ adjOffsets.back(); // Size of data
 	header.offsetWeights = 0;
@@ -157,12 +160,12 @@ void NetworkitBinaryWriter::write(const Graph &G, const std::string& path) {
 	});
 
 	assert(!firstInChunk[0]);
-	for (uint64_t c = 1; c < chunks; c++) {
+	for (uint64_t c = 1; c < nChunks; c++) {
 		outfile.write(reinterpret_cast<char*>(&firstInChunk[c]), sizeof(uint64_t));
 	}
 
 	// Write adjacency data.
-	for (uint64_t c = 1; c < chunks; c++) {
+	for (uint64_t c = 1; c < nChunks; c++) {
 		outfile.write(reinterpret_cast<char*>(&adjOffsets[c-1]), sizeof(uint64_t));
 	}
 	// Write size of list
@@ -186,7 +189,7 @@ void NetworkitBinaryWriter::write(const Graph &G, const std::string& path) {
 	});
 
 	// Write transpose data.
-	for (uint64_t c = 1; c < chunks; c++) {
+	for (uint64_t c = 1; c < nChunks; c++) {
 		outfile.write(reinterpret_cast<char*>(&transpOffsets[c-1]), sizeof(uint64_t));
 	}
 	// Write size of transpose list.
