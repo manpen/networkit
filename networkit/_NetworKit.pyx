@@ -6326,6 +6326,55 @@ cdef class Eccentricity:
 		return getValue(G._this, v)
 
 
+cdef extern from "<networkit/distance/EdgeSetDistance.hpp>" namespace "NetworKit::EdgeSetDistance":
+
+	cdef cppclass _EdgeSetDistance "NetworKit::EdgeSetDistance"(_Algorithm):
+		_EdgeSetDistance(_Graph G1, _Graph G2) except +
+		count sizeOfIntersection() except +
+		count sizeOfUnion() except +
+		double jaccardIndex() except +
+		double overlapCoefficient() except +
+		double perturbationScore() except +
+
+cdef class EdgeSetDistance(Algorithm):
+	"""
+	Distance measures between edges lists.
+
+	EdgeSetDistance(Graph G1, Graph G2)
+	where G1.isDirected() == G2.isDirected().
+
+	Given two graphs G_1 = (V_1, E_2) and G_2 = (V_2, E_2), this algorithm
+	computes the number of common and disjoint edges, as well as
+	the jaccard index, the overlapping coefficient, and the perturbation score
+	on the edge sets. Edge weights are ignored.
+
+	The algorithm has a runtime of O(m + dmax log dmax) and a space complexity
+	of O(dmax * P) where m is the number of edges, P the number of threads and
+	dmax the maximal degree.
+	"""
+	def __cinit__(self, Graph G1 not None, Graph G2 not None):
+		self._this = new _EdgeSetDistance(G1._this, G2._this)
+
+	def sizeOfIntersection(self):
+		"""Returns |E_1 intersect E_2| where E_i are the edges of the graphs"""
+		return (<_EdgeSetDistance*>(self._this)).sizeOfIntersection()
+
+	def sizeOfUnion(self):
+		"""Returns |E_1 union E_2| where E_i are the edges of the graphs"""
+		return (<_EdgeSetDistance*>(self._this)).sizeOfUnion()
+
+	def jaccardIndex(self):
+		"""Returns |E_1 intersect E_2| / |E_1 union E_2| where E_i are the edges of the graphs"""
+		return (<_EdgeSetDistance*>(self._this)).jaccardIndex()
+
+	def overlapCoefficient(self):
+		"""Returns |E_1 intersect E_2| / min(|E_1|, |E_2|) where E_i are the edges of the graphs"""
+		return (<_EdgeSetDistance*>(self._this)).overlapCoefficient()
+
+	def perturbationScore(self):
+		"""Same as overlapCoefficient but ensures |E_1| == |E_2|"""
+		return (<_EdgeSetDistance*>(self._this)).perturbationScore()
+
 cdef extern from "<networkit/distance/EffectiveDiameter.hpp>" namespace "NetworKit::EffectiveDiameter":
 
 	cdef cppclass _EffectiveDiameter "NetworKit::EffectiveDiameter"(_Algorithm):
