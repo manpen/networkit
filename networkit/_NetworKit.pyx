@@ -11501,35 +11501,72 @@ cdef class GlobalCurveball(Algorithm):
 cdef extern from "<networkit/randomization/CurveballUniformTradeGenerator.hpp>":
 
 	cdef cppclass _CurveballUniformTradeGenerator "NetworKit::CurveballUniformTradeGenerator":
-		_CurveballUniformTradeGenerator(count runLength, count numNodes) except +
+		_CurveballUniformTradeGenerator(count runLength, node idLowerBound, node idUpperBound) except +
+		_CurveballUniformTradeGenerator(count runLength, vector[node] allowedIds) except +
 		vector[pair[node, node]] generate() nogil except +
 
 cdef class CurveballUniformTradeGenerator:
 
 	"""
 	Generates a trade sequence consisting of num_trades many single trades.
-	Each trade contains two different node indices drawn uniformly at random
-	from the interval [0, num_nodes).
+	Each trade contains two different node indices drawn uniformly at random.
+
+	CurveballUniformTradeGenerator(count num_trades, nodes)
 
 	Parameters
 	----------
 
 	num_trades:
-	   Number of trades to generate.
+		Number of trades to generate.
 
-	num_nodes:
-	   Number of node indices to draw from
+   nodes:
+      If nodes is an integer, nodes are sampled from the interval [0, nodes).
+      If nodes is a 2-tuple, nodes are sampled from the interval [nodes[0], nodes[1]).
 
 	"""
 	cdef _CurveballUniformTradeGenerator *_this
+	cdef count numTrades
+	cdef node lower
+	cdef node upper
 
-	def __cinit__(self, count num_trades, count num_nodes):
-		self._this = new _CurveballUniformTradeGenerator(num_trades, num_nodes)
+	def __cinit__(self, count num_trades, nodes):
+		self._this = NULL
+		self.numTrades = num_trades
+		try:
+			self.lower, self.upper = nodes
+		except:
+			self.lower, self.upper = 0, <node> nodes
+
+
+	@staticmethod
+	def fromNodes(count num_trades, allowedIds):
+		"""
+		Restrict the Curveball trades to the set of nodes provided via allowedIds.
+
+		Parameters
+		----------
+
+		num_trades:
+			Number of trades to generate.
+
+		allowedIds:
+			A collection of node ids sampled from. Each item is sampled with the same
+			probability, i.e. if a node is appears multiple times, it has an increased
+			chance of being drawn.
+
+			allowedIds has to contain at least two different entries.
+		"""
+		res = CurveballUniformTradeGenerator(num_trades, 0)
+		res._this = new _CurveballUniformTradeGenerator(num_trades, <vector[node]?> allowedIds)
+		return res
 
 	def __dealloc__(self):
-		del self._this
+		if self._this != NULL:
+			del self._this
 
 	def generate(self):
+		if self._this == NULL:
+			self._this = new _CurveballUniformTradeGenerator(self.numTrades, self.lower, self.upper)
 		return self._this.generate()
 
 cdef extern from "<networkit/randomization/CurveballGlobalTradeGenerator.hpp>":
