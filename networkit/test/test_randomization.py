@@ -118,5 +118,34 @@ class TestRandomization(unittest.TestCase):
         self.assertGreater(num_clockwise, 400)
         self.assertLess   (num_clockwise, 600)
 
+
+    def test_curveball_uniform_trade_sequence_upper_only(self):
+        ts = nk.randomization.CurveballUniformTradeGenerator(100, 10).generate()
+        for (u, v) in ts:
+            self.assertGreaterEqual(u, 0)
+            self.assertGreaterEqual(v, 0)
+            self.assertLess(u, 10)
+            self.assertLess(v, 10)
+
+    def test_curveball_uniform_trade_sequence_lower_upper(self):
+        ts = nk.randomization.CurveballUniformTradeGenerator(100, (3, 10)).generate()
+        for (u, v) in ts:
+            self.assertGreaterEqual(u, 3)
+            self.assertGreaterEqual(v, 3)
+            self.assertLess(u, 10)
+            self.assertLess(v, 10)
+
+    def test_curveball_uniform_trade_sequence_from_nodes(self):
+        ts = nk.randomization.CurveballUniformTradeGenerator.fromNodes(100, [5,7,8,9]).generate()
+        for (u, v) in ts:
+            self.assertGreaterEqual(u, 5)
+            self.assertGreaterEqual(v, 5)
+            self.assertLess(u, 10)
+            self.assertLess(v, 10)
+            self.assertNotEqual(u, 6)
+            self.assertNotEqual(v, 6)
+
+
+
 if __name__ == "__main__":
     unittest.main()
