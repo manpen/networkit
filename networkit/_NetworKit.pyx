@@ -11573,9 +11573,15 @@ cdef class CurveballUniformTradeGenerator:
 			del self._this
 
 	def generate(self):
+		self.forceInitialize()
+		return self._this.generate()
+
+	def forceInitialize(self):
+		"""Usually the C++ generator is only initialized directly before the first generate() call.
+		This function forces the initialization. It's intended for internal usage only."""
 		if self._this == NULL:
 			self._this = new _CurveballUniformTradeGenerator(self.numTrades, self.lower, self.upper)
-		return self._this.generate()
+
 
 cdef extern from "<networkit/randomization/CurveballGlobalTradeGenerator.hpp>":
 
@@ -11596,11 +11602,11 @@ cdef class CurveballGlobalTradeGenerator:
 	----------
 
 	num_global_trades:
-	   Number of global trades to generate (i.e. the resulting sequence contains
-	   num_global_trades * floor(num_nodes / 2) trades)
+		Number of global trades to generate (i.e. the resulting sequence contains
+		num_global_trades * floor(num_nodes / 2) trades)
 
 	num_nodes:
-	   Number of node indices to draw from
+		Number of node indices to draw from
 
 	"""
 	cdef _CurveballGlobalTradeGenerator *_this
@@ -11640,11 +11646,11 @@ cdef class Curveball(Algorithm):
 	GlobalCurveball is typically faster and exhibits a smaller memory
 	footprint.
 
-   Observe that this algorithm does not support the run() method,
-   since it requires the trade sequence to be passed. It is possible
-   to invoke run(trades) several times, e.g. to reduce the memory
-   footprint which increases linearly with the number of trades
-   performed in a run.
+	Observe that this algorithm does not support the run() method,
+	since it requires the trade sequence to be passed. It is possible
+	to invoke run(trades) several times, e.g. to reduce the memory
+	footprint which increases linearly with the number of trades
+	performed in a run.
 
 	Parameters
 	----------
@@ -11660,9 +11666,38 @@ cdef class Curveball(Algorithm):
 		else:
 			raise RuntimeError("Parameter G has to be a graph")
 
-	def run(self, vector[pair[node, node]] trades):
-		with nogil:
-			(<_Curveball*>(self._this)).run(trades)
+	def run(self, trades):
+		"""
+		Execute the trades provided. This function can be called multiple times.
+
+		Parameters
+		----------
+
+		trades:
+			List of trades to execute. This can be either a list of node pair,
+			or a CurveballUniformTradeGenerator or CurveballGlobalTradeGenerator
+			object.
+
+		Always prefer to pass Curveball*TradeGenerator objects directly,
+		as this substantially decreases memory requirements and also is
+		moderately faster.
+		"""
+
+		cdef vector[pair[node, node]] trades_vec
+
+		if isinstance(trades, CurveballUniformTradeGenerator):
+			trades.forceInitialize()
+			with nogil:
+				trades_vec = (<_CurveballUniformTradeGenerator*>((<CurveballUniformTradeGenerator> trades)._this)).generate()
+				(<_Curveball*>(self._this)).run(trades_vec)
+		elif isinstance(trades, CurveballGlobalTradeGenerator):
+			with nogil:
+				trades_vec = (<_CurveballGlobalTradeGenerator*>((<CurveballGlobalTradeGenerator> trades)._this)).generate()
+				(<_Curveball*>(self._this)).run(trades_vec)
+		else:
+			trades_vec = <vector[pair[node, node]]?> trades
+			with nogil:
+				(<_Curveball*>(self._this)).run(trades_vec)
 		return self
 
 	def getGraph(self):

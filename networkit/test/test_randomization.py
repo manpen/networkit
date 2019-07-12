@@ -67,12 +67,36 @@ class TestRandomization(unittest.TestCase):
             G2 = algo.getGraph()
             check_graphs(G, G2)
 
+    def test_curveball_with_global_direct(self):
+        for G in self.graphs:
+            if G.isDirected(): continue
+
+            n = G.numberOfNodes()
+            ts = nk.randomization.CurveballGlobalTradeGenerator(5, n)
+            algo = nk.randomization.Curveball(G)
+            algo.run(ts)
+            algo.run(ts)
+            G2 = algo.getGraph()
+            check_graphs(G, G2)
+
     def test_curveball_with_uniform(self):
         for G in self.graphs:
             if G.isDirected(): continue
 
             n = G.numberOfNodes()
             ts = nk.randomization.CurveballUniformTradeGenerator(5 * n, n).generate()
+            algo = nk.randomization.Curveball(G)
+            algo.run(ts)
+            algo.run(ts)
+            G2 = algo.getGraph()
+            check_graphs(G, G2)
+
+    def test_curveball_with_uniform_direct(self):
+        for G in self.graphs:
+            if G.isDirected(): continue
+
+            n = G.numberOfNodes()
+            ts = nk.randomization.CurveballUniformTradeGenerator(5 * n, n)
             algo = nk.randomization.Curveball(G)
             algo.run(ts)
             algo.run(ts)
