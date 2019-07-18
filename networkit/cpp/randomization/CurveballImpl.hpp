@@ -30,21 +30,6 @@ constexpr count LISTROW_END = std::numeric_limits<count>::max();
 constexpr tradeid TRADELIST_END = std::numeric_limits<tradeid>::max();
 
 
-class CurveballMaterialization {
-
-protected:
-	const CurveballAdjacencyList &adjacencyList;
-
-public:
-	CurveballMaterialization(const CurveballAdjacencyList &adj_list);
-
-	Graph toGraph(bool parallel);
-
-protected:
-	void toGraphParallel(Graph &G);
-	void toGraphSequential(Graph &G);
-};
-
 class TradeList {
 public:
 	using edge_vector = std::vector<std::pair<node, node>>;
@@ -98,9 +83,13 @@ public:
 		return numAffectedEdges;
 	}
 
-	Graph getGraph(bool parallel) const;
+	Graph getGraph() const {
+	    return adjList.getGraph();
+	}
 
-	nodepair_vector getEdges() const;
+	nodepair_vector getEdges() const {
+	    return adjList.getEdges();
+	}
 
 protected:
 	const Graph &G;
