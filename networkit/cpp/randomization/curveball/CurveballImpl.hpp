@@ -19,9 +19,8 @@
 #include <networkit/auxiliary/Timer.hpp>
 #include <networkit/graph/Graph.hpp>
 
-#include "curveball/AdjacencyList.hpp"
-#include "curveball/TradeList.hpp"
-
+#include "AdjacencyList.hpp"
+#include "TradeList.hpp"
 
 namespace NetworKit {
 namespace CurveballDetails {
@@ -31,12 +30,11 @@ using nodepair_vector = std::vector<std::pair<node, node>>;
 constexpr node INVALID_NODE = std::numeric_limits<node>::max();
 constexpr count LISTROW_END = std::numeric_limits<count>::max();
 
-
-class CurveballIM {
+class CurveballImpl {
     using neighbour_vector = std::vector<node>;
 
 public:
-	CurveballIM(const Graph &G) :
+	CurveballImpl(const Graph &G) :
         G(G),
         numNodes(G.numberOfNodes()),
         adjList(G),
@@ -185,8 +183,6 @@ public:
         }
 
         hasRun = true;
-
-        return;
     }
 
 	count getNumberOfAffectedEdges() const {
@@ -218,10 +214,14 @@ protected:
         tradeList.initialize(trades);
 
         // Insert to adjacency list, directed according trades
-        G.forEdges([&](node u, node v) { update(u, v); });
+        // TODO: make parallel
+        G.forEdges([&](node u, node v) {
+            update(u, v);
+        });
     }
 
 	void restructureGraph(const trade_vector &trades) {
+        // TODO: replace by forEdge
         nodepair_vector edges = adjList.getEdges();
 
         adjList.restructure();
@@ -232,20 +232,15 @@ protected:
         }
     }
 
-	inline void update(const node a, const node b) {
+	void update(const node a, const node b) {
 		const tradeid ta = *(tradeList.getTrades(a));
 		const tradeid tb = *(tradeList.getTrades(b));
-		if (ta < tb) {
-			adjList.insertNeighbour(a, b);
-			return;
-		}
 
-		if (ta > tb) {
+		if (ta <= tb) {
+			adjList.insertNeighbour(a, b);
+		} else {
 			adjList.insertNeighbour(b, a);
-			return;
 		}
-		// ta == tb
-		{ adjList.insertNeighbour(a, b); }
 	}
 };
 

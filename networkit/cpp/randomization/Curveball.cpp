@@ -8,12 +8,12 @@
 #include <networkit/auxiliary/Random.hpp>
 
 #include <networkit/randomization/Curveball.hpp>
-#include "CurveballImpl.hpp"
+#include "curveball/CurveballImpl.hpp"
 
 namespace NetworKit {
 
 Curveball::Curveball(const Graph &G) :
-    impl(new CurveballDetails::CurveballIM{G})
+    impl(new CurveballDetails::CurveballImpl{G})
 {}
 
 // We have to define a "default" destructor here, since the definition of

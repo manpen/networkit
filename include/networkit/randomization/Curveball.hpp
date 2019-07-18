@@ -16,8 +16,8 @@
 
 namespace NetworKit {
 
-// pImpl
-namespace CurveballDetails { struct CurveballIM; }
+// forward declaration for pImpl
+namespace CurveballDetails { class CurveballImpl; }
 
 class Curveball : public Algorithm {
 public:
@@ -46,7 +46,7 @@ public:
 
 
 private:
-	std::unique_ptr<CurveballDetails::CurveballIM> impl;
+	std::unique_ptr<CurveballDetails::CurveballImpl> impl;
 };
 
 } // ! namespace NetworKit

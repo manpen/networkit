@@ -8,12 +8,11 @@
 #include <gtest/gtest.h>
 
 #include <networkit/graph/Graph.hpp>
-#include "../CurveballImpl.hpp"
+#include "../curveball/CurveballImpl.hpp"
 
 namespace NetworKit {
 
 class CurveballImplGTest : public ::testing::Test {};
-
 
 namespace CurveballDetails {
 
