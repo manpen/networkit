@@ -84,6 +84,27 @@ public:
         return edges;
     }
 
+    Graph getGraph() const {
+        Graph G(numberOfNodes());
+
+        const auto n = static_cast<omp_index>(numberOfNodes());
+
+        #pragma omp parallel for
+        for(omp_index i=0; i < n; ++i) {
+            G.preallocateUndirected(i, degreeAt(i));
+
+            for(auto it = cbegin(i), end = cend(i); it != end; ++it)
+                G.addPartialEdge(unsafe, i, *it);
+        }
+
+        for(omp_index i=0; i < n; ++i) {
+            for (auto it = cbegin(i), end = cend(i); it != end; ++it)
+                G.addPartialEdge(unsafe, *it, i);
+        }
+
+        return G;
+    }
+
     void insertNeighbour(const node node_id, const node neighbour) {
         auto pos = begin(node_id) + offsets[node_id];
 

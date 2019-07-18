@@ -24,8 +24,8 @@ void Curveball::run(const CurveballDetails::trade_vector& trades) {
     impl->run(trades);
 }
 
-Graph Curveball::getGraph(bool parallel) {
-    return impl->getGraph(parallel);
+Graph Curveball::getGraph(bool) const {
+    return impl->getGraph();
 }
 
 std::string Curveball::toString() const  {

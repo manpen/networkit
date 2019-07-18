@@ -73,11 +73,6 @@ template <> struct hash<NetworKit::Edge> {
 
 namespace NetworKit {
 
-// forward declaration to randomization/CurveballImpl.h
-namespace CurveballDetails {
-class CurveballMaterialization;
-}
-
 /**
  * @ingroup graph
  * A graph (with optional weights) and parallel iterator methods.
@@ -86,7 +81,6 @@ class Graph final {
 
     friend class ParallelPartitionCoarsening;
     friend class GraphBuilder;
-    friend class CurveballDetails::CurveballMaterialization;
 
   private:
     // graph attributes

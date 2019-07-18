@@ -32,11 +32,13 @@ public:
 
 	void run(const std::vector<std::pair<node, node> >& trades);
 
-	Graph getGraph(bool parallel = false);
+	///! Returns a copy of the randomized graph.
+	///! The @a parallel flag is ignored and will eventually be removed
+	Graph getGraph(bool parallel = true) const;
 
-	virtual std::string toString() const override final;
+	std::string toString() const final;
 
-	virtual bool isParallel() const override final {
+	bool isParallel() const final {
 		return false;
 	}
 
