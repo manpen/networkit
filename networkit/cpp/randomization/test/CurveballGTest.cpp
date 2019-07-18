@@ -41,6 +41,7 @@ void CurveballGTest::checkWithGraph(Graph& G, bool checkBuilder) {
         else {
             if (u == 0) {
                 numNodes++;
+                G.addNode();
                 G.addEdge(0, numNodes - 1);
                 degrees[0]++;
                 degrees[numNodes - 1] = 1;
