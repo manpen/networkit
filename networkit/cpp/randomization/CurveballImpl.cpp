@@ -33,92 +33,6 @@ using neighbour_it = neighbour_vector::iterator;
 using cneighbour_it = neighbour_vector::const_iterator;
 using nodepair_vector = std::vector<std::pair<node, node>>;
 
-///////////////////////////////////////////////////////////////////////////////
-
-// public static constexpr count LISTROW_END =
-// std::numeric_limits<count>::max();
-/**
- * @brief Initialize method (when constructor can't be used)
- *
- */
-void CurveballAdjacencyList::initialize(const degree_vector &degrees,
-                                        const edgeid degree_count) {
-	neighbours.resize(degree_count + degrees.size() + 1);
-	offsets.resize(degrees.size());
-	begins.resize(degrees.size() + 1);
-	degreeCount = degree_count;
-
-	count sum = 0;
-	node node_id = 0;
-	for (const count node_degree : degrees) {
-		begins[node_id] = sum;
-
-		// assert(node_degree > 0);
-
-		sum += node_degree;
-		neighbours[sum] = LISTROW_END;
-
-		// shift after Sentinel
-		sum += 1;
-		node_id++;
-	}
-	neighbours[sum] = LISTROW_END;
-	begins[degrees.size()] = sum;
-
-	assert(sum == degreeCount + degrees.size());
-	assert(node_id == degrees.size());
-
-	return;
-}
-
-void CurveballAdjacencyList::restructure() {
-	std::fill(offsets.begin(), offsets.end(), 0);
-	return;
-}
-
-/**
- * @brief Constructor
- * @param degree_vector Pointer to a vector with node degrees
- * @param degree_count Sum of all degrees in degree_vector
- *
- * We add to each adjacency list entry a delimiter to mark the end
- */
-CurveballAdjacencyList::CurveballAdjacencyList(const degree_vector &degrees,
-                                               const edgeid degree_count)
-    : neighbours(degree_count + degrees.size() + 1), offsets(degrees.size()),
-      begins(degrees.size() + 1), degreeCount(degree_count) {
-	count sum = 0;
-	node node_id = 0;
-	for (const count node_degree : degrees) {
-		begins[node_id] = sum;
-
-		// no isolated nodes allowed
-		assert(node_degree > 0);
-
-		sum += node_degree;
-		neighbours[sum] = LISTROW_END;
-
-		sum += 1;
-		node_id++;
-	}
-	neighbours[sum] = LISTROW_END;
-	begins[degrees.size()] = sum;
-
-	assert(sum == degree_count + degrees.size());
-	assert(node_id == degrees.size());
-}
-
-nodepair_vector CurveballAdjacencyList::getEdges() const {
-	nodepair_vector edges;
-	edges.reserve(degreeCount);
-	for (node nodeid = 0; nodeid < static_cast<node>(offsets.size()); nodeid++) {
-		for (auto it = cbegin(nodeid); it != cend(nodeid); it++) {
-			edges.push_back(std::make_pair(nodeid, *it));
-		}
-	}
-
-	return edges;
-}
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -359,9 +273,13 @@ TradeList::TradeList(const trade_vector &trades, const node num_nodes)
 
 ///////////////////////////////////////////////////////////////////////////////
 
-CurveballIM::CurveballIM(const Graph &G)
-    : G(G), numNodes(G.numberOfNodes()), tradeList(G.numberOfNodes()),
-      numAffectedEdges(0) {
+CurveballIM::CurveballIM(const Graph &G) :
+    G(G),
+    numNodes(G.numberOfNodes()),
+    adjList(G),
+    tradeList(G.numberOfNodes()),
+    numAffectedEdges(0)
+{
 	hasRun = false;
 	assert(G.checkConsistency());
 	assert(G.numberOfSelfLoops() == 0);
@@ -370,23 +288,10 @@ CurveballIM::CurveballIM(const Graph &G)
 
 void CurveballIM::loadFromGraph(
     const std::vector<std::pair<node, node>> &trades) {
-	// Compute degree sequence
-	degree_vector degrees;
-	degrees.reserve(numNodes);
-	edgeid degree_sum = 0;
-	G.forNodes([&](node v) {
-		degrees.push_back(G.degree(v));
-		degree_sum += G.degree(v);
-	});
-
-	maxDegree = *(std::max_element(degrees.cbegin(), degrees.cend()));
-
-	adjList.initialize(degrees, degree_sum);
-	tradeList.initialize(trades);
+	maxDegree = G.maxDegree();
 
 	// Insert to adjacency list, directed according trades
 	G.forEdges([&](node u, node v) { update(u, v); });
-	return;
 }
 
 void CurveballIM::restructureGraph(
@@ -399,8 +304,6 @@ void CurveballIM::restructureGraph(
 	for (const auto edge : edges) {
 		update(edge.first, edge.second);
 	}
-
-	return;
 }
 
 void CurveballIM::run(const trade_vector &trades) {

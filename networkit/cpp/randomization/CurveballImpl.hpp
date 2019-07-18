@@ -12,6 +12,8 @@
 #include <networkit/Globals.hpp>
 #include <networkit/graph/Graph.hpp>
 
+#include "curveball/AdjacencyList.hpp"
+
 namespace NetworKit {
 namespace CurveballDetails {
 
@@ -27,83 +29,6 @@ constexpr node INVALID_NODE = std::numeric_limits<node>::max();
 constexpr count LISTROW_END = std::numeric_limits<count>::max();
 constexpr tradeid TRADELIST_END = std::numeric_limits<tradeid>::max();
 
-class CurveballAdjacencyList {
-public:
-	using degree_vector = std::vector<count>;
-	using neighbour_vector = std::vector<node>;
-	using pos_vector = std::vector<edgeid>;
-	using pos_it = pos_vector::iterator;
-	using neighbour_it = neighbour_vector::iterator;
-	using cneighbour_it = neighbour_vector::const_iterator;
-	using nodepair_vector = std::vector<std::pair<node, node>>;
-
-protected:
-	neighbour_vector neighbours;
-	degree_vector offsets;
-	pos_vector begins;
-	edgeid degreeCount;
-
-public:
-	CurveballAdjacencyList() = default;
-
-	// Receives the degree_vector to initialize
-	// As trades permute neighbours the degrees don't change
-	CurveballAdjacencyList(const degree_vector &degrees,
-	                       const edgeid degree_count);
-
-	void initialize(const degree_vector &degrees, const edgeid degree_count);
-
-	void restructure();
-
-	// No Copy Constructor
-	CurveballAdjacencyList(const CurveballAdjacencyList &) = delete;
-
-	neighbour_it begin(const node node_id) {
-		return neighbours.begin() + begins[node_id];
-	}
-
-	neighbour_it end(const node node_id) {
-		return neighbours.begin() + begins[node_id] + offsets[node_id];
-	}
-
-	cneighbour_it cbegin(const node node_id) const {
-		return neighbours.cbegin() + begins[node_id];
-	}
-
-	cneighbour_it cend(const node node_id) const {
-		return neighbours.cbegin() + begins[node_id] + offsets[node_id];
-	}
-
-	nodepair_vector getEdges() const;
-
-	void insertNeighbour(const node node_id, const node neighbour) {
-		auto pos = begin(node_id) + offsets[node_id];
-
-		assert(*pos != LISTROW_END);
-
-		*pos = neighbour;
-
-		offsets[node_id]++;
-	}
-
-	node numberOfNodes() const { return static_cast<node>(offsets.size()); }
-
-	node numberOfEdges() const { return static_cast<edgeid>(degreeCount); }
-
-	void resetRow(const node node_id) {
-		assert(node_id < static_cast<node>(offsets.size()));
-
-		offsets[node_id] = 0;
-
-		return;
-	}
-
-	count degreeAt(node node_id) const {
-		assert(node_id < static_cast<node>(offsets.size()));
-
-		return begins[node_id + 1] - begins[node_id] - 1;
-	}
-};
 
 class CurveballMaterialization {
 
@@ -182,7 +107,7 @@ protected:
 	const node numNodes;
 
 	bool hasRun;
-	CurveballAdjacencyList adjList;
+	AdjacencyList adjList;
 	TradeList tradeList;
 	count maxDegree;
 	edgeid numAffectedEdges; // affected half-edges
