@@ -27,9 +27,8 @@ protected:
 
 void CurveballGTest::checkWithGraph(Graph& G, bool checkBuilder) {
     node numNodes = G.numberOfNodes();
-    const count numTrades = 5;
+    const count numTrades = 5*G.numberOfNodes();
     const count numTradeRuns = 5;
-
 
     std::vector<count> degrees(numNodes + 1);
 
@@ -103,7 +102,7 @@ void CurveballGTest::checkWithGraph(Graph& G, bool checkBuilder) {
 TEST_F(CurveballGTest, testCurveballErdosRenyi) {
     Aux::Random::setSeed(1, false);
 
-    node numNodes = 1000;
+    node numNodes = 100;
     ErdosRenyiGenerator generator(numNodes, 0.3);
     Graph G = generator.generate();
 
