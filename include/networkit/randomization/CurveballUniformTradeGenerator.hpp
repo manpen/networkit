@@ -10,6 +10,10 @@
 #include <algorithm>
 #include <cassert>
 #include <vector>
+#include <random>
+#include <utility>
+
+#include <tlx/define/likely.hpp>
 
 #include <networkit/Globals.hpp>
 
@@ -24,7 +28,8 @@ namespace NetworKit {
  */
 class CurveballUniformTradeGenerator {
 public:
-	using value_type = std::vector<std::pair<node, node> >;
+    using trade = std::pair<node, node>;
+    using value_type = std::vector<trade>;
 
 protected:
 	count numTrades;
@@ -68,6 +73,27 @@ public:
 	///! Generate and return a trade sequence. May be called multiple times.
 	value_type generate() const;
 
+	///! Returns two different random nodes
+	trade randomTrade(std::mt19937_64& gen) const {
+	// Helper to sample random node
+		auto distr = std::uniform_int_distribution<node>(idLowerBound, idUpperBound);
+		auto randomNode = [&] {
+			return allowedIds.empty() ? distr(gen) : allowedIds[distr(gen)];
+		};
+
+	 // Sample pair of different nodes
+		const node fst = randomNode();
+		node snd;
+		do {
+			snd = randomNode();
+		} while (TLX_UNLIKELY(fst == snd));
+
+		return {fst, snd};
+	}
+
+	count numberOfTrades() const {
+		return numTrades;
+	}
 };
 
 }

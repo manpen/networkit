@@ -36,6 +36,10 @@ void Curveball::run(const CurveballDetails::trade_vector& trades) {
     impl->run(trades);
 }
 
+void Curveball::run(CurveballUniformTradeGenerator& generator) {
+    impl->run(generator);
+}
+
 Graph Curveball::getGraph(bool) const {
     return impl->getGraph();
 }
@@ -48,4 +52,4 @@ count Curveball::getNumberOfAffectedEdges() const {
     return impl->getNumberOfAffectedEdges();
 }
 
-}
+} // namespace NetworKit

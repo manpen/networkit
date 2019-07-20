@@ -14,6 +14,8 @@
 #include <networkit/base/Algorithm.hpp>
 #include <networkit/graph/Graph.hpp>
 
+#include <networkit/randomization/CurveballUniformTradeGenerator.hpp>
+
 namespace NetworKit {
 
 // forward declaration for pImpl
@@ -30,7 +32,12 @@ public:
 		throw std::runtime_error("run() is not supported by this algorithm; use run(trades)");
 	};
 
+	///! Execute a sequence of trades
 	void run(const std::vector<std::pair<node, node> >& trades);
+
+	///! Execute a sequence of trades as implicitly described by the generator.
+	///! For directed graphs this method is the fastest one (and not slower of undirected)
+	void run(CurveballUniformTradeGenerator& generator);
 
 	///! Returns a copy of the randomized graph.
 	///! The @a parallel flag is ignored and will eventually be removed
