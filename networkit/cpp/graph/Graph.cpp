@@ -1136,6 +1136,12 @@ Graph Graph::subgraphFromNodes(const std::unordered_set<node> &nodes, bool inclu
 		return neighbors;
 	}();
 
+	/*
+	 * returns one of three different relevance scores:
+	 * 2: Is in the original nodes set
+	 * 1: Is a relevant neighbor (i.e., respective include*Neighbor was set)
+	 * 0: Neither of both
+	 */
 	auto isRelevantNode = [&] (const node u) {
 		if (nodes.find(u) != nodes.end()) return 2;
 		if (!neighbors.empty() && neighbors.find(u) != neighbors.end()) return 1;
@@ -1151,8 +1157,8 @@ Graph Graph::subgraphFromNodes(const std::unordered_set<node> &nodes, bool inclu
 	});
 
 	forEdges([&](node u, node v, edgeweight w) {
-		// only include edges if at least one endpoint is in nodes, and the other
-		// is either in nodes or in neighbors (if includeNeighbors is set)
+		// only include edges if at least one endpoint is in nodes (relevance 2),
+		// and the other is either in nodes or in neighbors (relevance >= 1)
 		if (isRelevantNode(u) + isRelevantNode(v) > 2) {
 			S.addEdge(u, v, w);
 		}

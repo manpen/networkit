@@ -9,12 +9,8 @@
 #include <algorithm>
 #include <vector>
 
-#include <tlx/define/likely.hpp>
-
 #include <networkit/auxiliary/Random.hpp>
-
 #include <networkit/randomization/CurveballUniformTradeGenerator.hpp>
-
 
 namespace NetworKit {
 
@@ -23,23 +19,11 @@ CurveballUniformTradeGenerator::value_type CurveballUniformTradeGenerator::gener
 
 	#pragma omp parallel if (numTrades > 10000)
 	{
-		const bool sampleFromVector = !allowedIds.empty();
 		auto& gen = Aux::Random::getURNG();
-		auto distr = std::uniform_int_distribution<node>(idLowerBound, idUpperBound);
-
-		auto randomNode = [&] {
-			return sampleFromVector ? allowedIds[distr(gen)] : distr(gen);
-		};
 
 		#pragma omp for
 		for (omp_index t_id = 0; t_id < static_cast<omp_index>(numTrades); ++t_id) {
-			const node fst = randomNode();
-			node snd;
-			do {
-				snd = randomNode();
-			} while (TLX_UNLIKELY(fst == snd));
-
-			trades_out[t_id] = {fst, snd};
+			trades_out[t_id] = randomTrade(gen);
 		}
 	}
 

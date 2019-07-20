@@ -14,15 +14,17 @@
 #include <networkit/base/Algorithm.hpp>
 #include <networkit/graph/Graph.hpp>
 
+#include <networkit/randomization/CurveballUniformTradeGenerator.hpp>
+
 namespace NetworKit {
 
-// pImpl
-namespace CurveballDetails { struct CurveballIM; }
+// forward declaration for pImpl
+namespace CurveballDetails { class CurveballImpl; }
 
 class Curveball : public Algorithm {
 public:
 
-	explicit Curveball(const Graph &G);
+	explicit Curveball(const Graph &G, bool allowSelfLoops = false, bool isBipartite = false);
 
 	virtual ~Curveball();
 
@@ -30,21 +32,27 @@ public:
 		throw std::runtime_error("run() is not supported by this algorithm; use run(trades)");
 	};
 
+	///! Execute a sequence of trades
 	void run(const std::vector<std::pair<node, node> >& trades);
 
-	Graph getGraph(bool parallel = false);
+	///! Execute a sequence of trades as implicitly described by the generator.
+	///! For directed graphs this method is the fastest one (and not slower of undirected)
+	void run(CurveballUniformTradeGenerator& generator);
 
-	virtual std::string toString() const override final;
+	///! Returns a copy of the randomized graph.
+	///! The @a parallel flag is ignored and will eventually be removed
+	Graph getGraph(bool parallel = true) const;
 
-	virtual bool isParallel() const override final {
+	std::string toString() const final;
+
+	bool isParallel() const final {
 		return false;
 	}
 
 	count getNumberOfAffectedEdges() const;
 
-
 private:
-	std::unique_ptr<CurveballDetails::CurveballIM> impl;
+	std::unique_ptr<CurveballDetails::CurveballImpl> impl;
 };
 
 } // ! namespace NetworKit

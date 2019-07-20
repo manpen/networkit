@@ -25,6 +25,8 @@
 #include <networkit/randomization/GlobalTradeSequence.hpp>
 #include <networkit/randomization/GlobalCurveball.hpp>
 
+#include "Helper.hpp"
+
 namespace NetworKit {
 namespace CurveballDetails {
 
@@ -183,17 +185,11 @@ public:
 
                 // Split neighborhoods into common and disjoint neighbors
                 // Directly forward common neighbours
-                disjoint_neighbours.clear();
-                common_neighbours.clear();
-
-                const auto num_neighbourhood_of_u = neighbourhood_of_u.size();
-                const auto num_neighbourhood_of_v = neighbourhood_of_v.size();
-
-                if (num_neighbourhood_of_u < num_neighbourhood_of_v) {
-                    computeCommonDisjointNeighbour(neighbourhood_of_u, neighbourhood_of_v, common_neighbours, disjoint_neighbours);
-                } else {
-                    computeCommonDisjointNeighbour(neighbourhood_of_v, neighbourhood_of_u, common_neighbours, disjoint_neighbours);
-                }
+                // THIS CALL INVALIDATES THE CONTENTS OF NEIGHBOURHOOD_OF_[UV]
+                CurveballDetails::computeCommonDisjointNeighbour(
+                    neighbourhood_of_u.begin(), neighbourhood_of_u.end(),
+                    neighbourhood_of_v.begin(), neighbourhood_of_v.end(),
+                    common_neighbours, disjoint_neighbours);
 
                 // Directly forward neighbours shared by both nodes
                 for(const auto neighbour : common_neighbours) {
@@ -261,8 +257,8 @@ public:
                         }
                     };
 
-                    const size_t u_setsize = num_neighbourhood_of_u - common_neighbours.size();
-                    const size_t v_setsize = num_neighbourhood_of_v - common_neighbours.size();
+                    const size_t u_setsize = neighbourhood_of_u.size() - common_neighbours.size();
+                    const size_t v_setsize = neighbourhood_of_v.size() - common_neighbours.size();
                     const size_t setsize = u_setsize + v_setsize;
                     assert(u_setsize + v_setsize == disjoint_neighbours.size());
 
@@ -355,60 +351,6 @@ protected:
 
     const Graph& inputGraph;
     const bool allowSelfLoops; ///< Allow self loops (only relevant for directed graphs)
-
-    void computeCommonDisjointNeighbour(std::vector<node> &neighbourhood_of_u,
-                                        const std::vector<node> &neighbourhood_of_v,
-                                        std::vector<node> &common_neighbours,
-                                        std::vector<node> &disjoint_neighbours) const {
-
-        constexpr node BIT = node(1) << (sizeof(node) * 8 - 1);
-        constexpr node MASK = ~BIT;
-
-        assert(common_neighbours.empty());
-        assert(disjoint_neighbours.empty());
-
-        std::sort(neighbourhood_of_u.begin(), neighbourhood_of_u.end());
-
-        size_t remaining_hits = neighbourhood_of_u.size() / 2;
-
-        #ifndef NDEBUG
-        const size_t initial_size = neighbourhood_of_u.size() + neighbourhood_of_v.size();
-        #endif
-
-        for(const auto nv : neighbourhood_of_v) {
-            const auto u_it = std::lower_bound(neighbourhood_of_u.begin(),
-                neighbourhood_of_u.end(), nv,
-                [MASK] (const node u, const node v) {return (u&MASK) < v;});
-
-            if (u_it != neighbourhood_of_u.cend() && *u_it == nv) {
-                common_neighbours.push_back(nv);
-                *u_it |= BIT;
-
-                if (!--remaining_hits)
-                {
-                    auto new_end = std::remove_if(neighbourhood_of_u.begin(), neighbourhood_of_u.end(),
-                    [BIT] (const node u) {return u & BIT;});
-                    neighbourhood_of_u.resize(std::distance(neighbourhood_of_u.begin(), new_end));
-                    remaining_hits = neighbourhood_of_u.size() / 2;
-                    if (remaining_hits < 8) remaining_hits = neighbourhood_of_u.size();
-                }
-
-            } else {
-                disjoint_neighbours.push_back(nv);
-            }
-        }
-
-        auto new_end = std::remove_if(neighbourhood_of_u.begin(), neighbourhood_of_u.end(),
-                                      [BIT] (const node u) {return u & BIT;});
-        disjoint_neighbours.insert(disjoint_neighbours.end(), neighbourhood_of_u.begin(), new_end);
-
-        assert(2*common_neighbours.size() + disjoint_neighbours.size() == initial_size);
-        #ifndef NDEBUG
-        for(auto x : common_neighbours)
-            assert(std::find(disjoint_neighbours.cbegin(), disjoint_neighbours.cend(), x) == disjoint_neighbours.cend());
-        #endif
-    }
-
 };
 
 } // ! namespace CurveballDetails

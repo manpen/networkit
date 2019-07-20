@@ -5,16 +5,26 @@
  *      Author:  Hung Tran <htran@ae.cs.uni-frankfurt.de>, Manuel Penschuck <networkit@manuel.jetzt>
  */
 
-#include <networkit/auxiliary/Random.hpp>
-
 #include <networkit/randomization/Curveball.hpp>
-#include "CurveballImpl.hpp"
+#include "curveball/CurveballImpl.hpp"
 
 namespace NetworKit {
 
-Curveball::Curveball(const Graph &G) :
-    impl(new CurveballDetails::CurveballIM{G})
-{}
+Curveball::Curveball(const Graph &G, bool allowSelfLoops, bool isBipartite) :
+    impl(new CurveballDetails::CurveballImpl{G, allowSelfLoops, isBipartite})
+{
+    if (allowSelfLoops && !G.isDirected()) {
+        throw std::runtime_error("Self loops are only supported for directed graphs");
+    }
+
+    if (!allowSelfLoops && G.numberOfSelfLoops()) {
+        throw  std::runtime_error("Self loops are forbidden but input graph contains some");
+    }
+
+    if (G.isWeighted()) {
+        throw std::runtime_error("GlobalCurveball supports only unweighted graphs");
+    }
+}
 
 // We have to define a "default" destructor here, since the definition of
 // CurveballDetails::CurveballImpl is not known in the header file
@@ -24,8 +34,12 @@ void Curveball::run(const CurveballDetails::trade_vector& trades) {
     impl->run(trades);
 }
 
-Graph Curveball::getGraph(bool parallel) {
-    return impl->getGraph(parallel);
+void Curveball::run(CurveballUniformTradeGenerator& generator) {
+    impl->run(generator);
+}
+
+Graph Curveball::getGraph(bool) const {
+    return impl->getGraph();
 }
 
 std::string Curveball::toString() const  {
@@ -36,4 +50,4 @@ count Curveball::getNumberOfAffectedEdges() const {
     return impl->getNumberOfAffectedEdges();
 }
 
-}
+} // namespace NetworKit
