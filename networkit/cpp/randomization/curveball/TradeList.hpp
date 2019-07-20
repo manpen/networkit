@@ -92,6 +92,14 @@ public:
     // No Copy Constructor
     TradeList(const TradeList &) = delete;
 
+    void prefetchTrades1(const node nodeid) const {
+        __builtin_prefetch(reinterpret_cast<const void*>(offsets.data() + nodeid));
+    }
+
+    void prefetchTrades2(const node nodeid) const {
+        __builtin_prefetch(reinterpret_cast<const void*>(tradeList.data() + offsets[nodeid]));
+    }
+
     tradeid_it getTrades(const node nodeid) const {
         assert(nodeid < numNodes);
 

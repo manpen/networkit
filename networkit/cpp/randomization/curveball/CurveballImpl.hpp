@@ -35,25 +35,58 @@ class CurveballImpl {
     using neighbour_vector = std::vector<node>;
 
 public:
-	CurveballImpl(const Graph &G) :
+	CurveballImpl(const Graph &G, bool allowSelfLoops = false, bool isBipartite = false) :
         G(G),
         numNodes(G.numberOfNodes()),
+        allowSelfLoops(allowSelfLoops),
+        isBipartite(isBipartite),
         adjList(G),
         tradeList(G.numberOfNodes()),
         numAffectedEdges(0)
-    {
-        hasRun = false;
-        assert(G.checkConsistency());
-        assert(G.numberOfSelfLoops() == 0);
-        assert(numNodes > 0);
+    {}
+
+	void run(const trade_vector &trades) {
+        if (G.isDirected()) {
+            process<true>(trades);
+        } else {
+            process<false>(trades);
+        }
+
+        hasRun = true;
     }
 
+	count getNumberOfAffectedEdges() const {
+		assert(hasRun);
+		return numAffectedEdges;
+	}
+
+	Graph getGraph() const {
+	    return adjList.getGraph(G);
+	}
+
+	nodepair_vector getEdges() const {
+	    return adjList.getEdges();
+	}
+
+protected:
+	const Graph &G;
+	const node numNodes;
+
+	bool hasRun {false};
+	bool allowSelfLoops {false};
+	bool isBipartite {false};
+
+	AdjacencyList adjList;
+	TradeList tradeList;
+	count maxDegree;
+	edgeid numAffectedEdges; // affected half-edges
+
     template <bool Directed = false>
-	void run(const trade_vector &trades) {
+    void process(const trade_vector& trades) {
         if (!hasRun)
-            loadFromGraph(trades);
+            loadFromGraph<Directed>(trades);
         else
-            restructureGraph(trades);
+            restructureGraph<Directed>(trades);
 
         neighbour_vector common_neighbours;
         neighbour_vector disjoint_neighbours;
@@ -65,7 +98,7 @@ public:
 
         auto &urng = Aux::Random::getURNG();
 
-        constexpr bool allowSelfLoops = false;
+        constexpr bool allowSelfLoops = true;
 
         for (const auto trade : trades) {
             handler.assureRunning();
@@ -91,7 +124,8 @@ public:
             // If this is the case, they are removed from the neighbourhood
             bool edge_between_uv = false;
             bool edge_between_vu = false;
-            if (!Directed || !allowSelfLoops) {
+
+            if (!isBipartite && (!Directed || !allowSelfLoops)) {
                 auto it = std::find(u_begin, u_end, v);
                 if (it != u_end) {
                     *it = *(--u_end);
@@ -120,49 +154,71 @@ public:
             const auto splitter = disjoint_neighbours.cbegin() + u_setsize;
             tlx::random_bipartition_shuffle(disjoint_neighbours.begin(), disjoint_neighbours.end(), u_setsize, urng);
 
-            // Send u's neighbours
-            if (edge_between_uv) update(u, v);
-            for(auto it = disjoint_neighbours.cbegin(); it != splitter; ++it)
-                update(u, *it);
+            if (Directed) {
+                // Send u's neighbours
+                if (edge_between_uv) update<Directed>(u, v);
+                for (auto it = disjoint_neighbours.cbegin(); it != splitter; ++it)
+                    update<Directed>(u, *it);
 
-            // Send v's neighbours
-            if (edge_between_vu) update(v, u);
-            for(auto it = splitter; it != disjoint_neighbours.cend(); ++it)
-                update(v, *it);
+                // Send v's neighbours
+                if (edge_between_vu) update<Directed>(v, u);
+                for (auto it = splitter; it != disjoint_neighbours.cend(); ++it)
+                    update<Directed>(v, *it);
 
-            // Send common neighbours
-            for (const auto common : common_neighbours) {
-                update(u, common);
-                update(v, common);
+
+                // Send common neighbours
+                for (const auto common : common_neighbours) {
+                    update<Directed>(u, common);
+                    update<Directed>(v, common);
+                }
+
+            } else {
+                auto prefetched_update = [&] (node u, node* begin, size_t size) {
+                    const auto prefetch_len = std::min<size_t>(16, size) / 2;
+
+                    for(size_t i = 0; i < prefetch_len; ++i) {
+                        tradeList.prefetchTrades1(begin[i]);
+                    }
+
+                    for(size_t i = prefetch_len; i < 2 * prefetch_len; ++i) {
+                        tradeList.prefetchTrades1(begin[i]);
+                        tradeList.prefetchTrades2(begin[i - prefetch_len]);
+                    }
+
+                    for(size_t i = 2 * prefetch_len; i < size; ++i) {
+                        tradeList.prefetchTrades1(begin[i]);
+                        tradeList.prefetchTrades2(begin[i - prefetch_len]);
+                        update<false>(u, begin[i - 2 * prefetch_len]);
+                    }
+
+                    for(size_t i = size; i < size + prefetch_len; ++i) {
+                        tradeList.prefetchTrades2(begin[i - prefetch_len]);
+                        update<false>(u, begin[i - 2 * prefetch_len]);
+                    }
+
+                    for(size_t i = size + prefetch_len; i < size + 2 * prefetch_len; ++i)
+                        update<false>(u, begin[i - 2 * prefetch_len]);
+                };
+
+
+                // Send u's neighbours
+                if (edge_between_uv) update<Directed>(u, v);
+                prefetched_update(u, disjoint_neighbours.data(), u_setsize);
+
+                // Send v's neighbours
+                if (edge_between_vu) update<Directed>(v, u);
+                prefetched_update(v, disjoint_neighbours.data() + u_setsize, disjoint_neighbours.size() - u_setsize);
+
+                // Send common neighbours
+                for (const auto common : common_neighbours) {
+                    update<Directed>(u, common);
+                    update<Directed>(v, common);
+                }
             }
         }
-
-        hasRun = true;
     }
 
-	count getNumberOfAffectedEdges() const {
-		assert(hasRun);
-		return numAffectedEdges;
-	}
-
-	Graph getGraph() const {
-	    return adjList.getGraph();
-	}
-
-	nodepair_vector getEdges() const {
-	    return adjList.getEdges();
-	}
-
-protected:
-	const Graph &G;
-	const node numNodes;
-
-	bool hasRun;
-	AdjacencyList adjList;
-	TradeList tradeList;
-	count maxDegree;
-	edgeid numAffectedEdges; // affected half-edges
-
+    template <bool Directed>
 	void loadFromGraph(const trade_vector &trades) {
         maxDegree = G.maxDegree();
 
@@ -170,11 +226,10 @@ protected:
 
         // Insert to adjacency list, directed according trades
         // TODO: make parallel
-        G.forEdges([&](node u, node v) {
-            update(u, v);
-        });
+        G.forEdges([&](node u, node v) {update<Directed>(u, v);});
     }
 
+    template <bool Directed>
 	void restructureGraph(const trade_vector &trades) {
         // TODO: replace by forEdge
         nodepair_vector edges = adjList.getEdges();
@@ -182,21 +237,25 @@ protected:
         adjList.restructure();
         tradeList.initialize(trades);
 
-        for (const auto edge : edges) {
-            update(edge.first, edge.second);
+        for (const auto edge : edges) {update<Directed>(edge.first, edge.second);}
+    }
+
+    template <bool Directed>
+    void update(const node a, const node b) {
+	    if (Directed) {
+	        adjList.insertNeighbour(a, b);
+	    } else {
+            const tradeid ta = *(tradeList.getTrades(a));
+            const tradeid tb = *(tradeList.getTrades(b));
+
+            if (std::tie(ta, a) <= std::tie(tb, b)) {
+                adjList.insertNeighbour(a, b);
+            } else {
+                adjList.insertNeighbour(b, a);
+            }
         }
     }
 
-	void update(const node a, const node b) {
-		const tradeid ta = *(tradeList.getTrades(a));
-		const tradeid tb = *(tradeList.getTrades(b));
-
-		if (std::tie(ta, a) <= std::tie(tb, b)) {
-			adjList.insertNeighbour(a, b);
-		} else {
-			adjList.insertNeighbour(b, a);
-		}
-	}
 };
 
 
