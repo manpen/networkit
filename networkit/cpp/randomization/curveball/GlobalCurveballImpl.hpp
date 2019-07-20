@@ -25,7 +25,7 @@
 #include <networkit/randomization/GlobalTradeSequence.hpp>
 #include <networkit/randomization/GlobalCurveball.hpp>
 
-#include "curveball/Helper.hpp"
+#include "Helper.hpp"
 
 namespace NetworKit {
 namespace CurveballDetails {

@@ -9,7 +9,7 @@
 
 #include <networkit/randomization/GlobalCurveball.hpp>
 #include <networkit/randomization/DegreePreservingShuffle.hpp>
-#include "GlobalCurveballImpl.hpp"
+#include "curveball/GlobalCurveballImpl.hpp"
 
 namespace NetworKit {
 
