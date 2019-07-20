@@ -22,7 +22,7 @@ namespace CurveballDetails { class CurveballImpl; }
 class Curveball : public Algorithm {
 public:
 
-	explicit Curveball(const Graph &G);
+	explicit Curveball(const Graph &G, bool allowSelfLoops = false, bool isBipartite = false);
 
 	virtual ~Curveball();
 
@@ -43,7 +43,6 @@ public:
 	}
 
 	count getNumberOfAffectedEdges() const;
-
 
 private:
 	std::unique_ptr<CurveballDetails::CurveballImpl> impl;

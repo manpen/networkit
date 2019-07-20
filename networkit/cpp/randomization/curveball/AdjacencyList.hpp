@@ -10,6 +10,8 @@
 #include <cassert>
 #include <vector>
 
+#include <tlx/unused.hpp>
+
 #include <networkit/Globals.hpp>
 #include <networkit/graph/Graph.hpp>
 
@@ -29,11 +31,12 @@ public:
     AdjacencyList() = delete;
 
     AdjacencyList(const Graph &G) :
-        neighbours(2 * G.numberOfEdges() + G.numberOfNodes() + 1),
         offsets(G.numberOfNodes()),
         begins(G.numberOfNodes() + 1)
     {
-        degreeCount = 2 * G.numberOfEdges();
+        auto scale = 2 - G.isDirected();
+        degreeCount = scale * G.numberOfEdges();
+        neighbours.resize(scale * G.numberOfEdges() + G.numberOfNodes() + 1);
 
         count sum = 0;
 
@@ -84,23 +87,55 @@ public:
         return edges;
     }
 
-    Graph getGraph() const {
-        Graph G(numberOfNodes());
+    Graph getGraph(const Graph& orig) const {
+        Graph G(numberOfNodes(), false, orig.isDirected());
 
         const auto n = static_cast<omp_index>(numberOfNodes());
 
-        #pragma omp parallel for
-        for(omp_index i=0; i < n; ++i) {
-            G.preallocateUndirected(i, degreeAt(i));
+        count numSelfLoops = 0;
+        count numEdges = 0;
+        tlx::unused(numEdges);
 
-            for(auto it = cbegin(i), end = cend(i); it != end; ++it)
-                G.addPartialEdge(unsafe, i, *it);
+        if (orig.isDirected()) {
+            #pragma omp parallel for
+            for (omp_index i = 0; i < n; ++i) {
+                G.preallocateDirected(i, orig.degreeOut(i), orig.degreeIn(i));
+
+                for (auto it = cbegin(i), end = cend(i); it != end; ++it)
+                    G.addPartialOutEdge(unsafe, i, *it);
+            }
+
+            for (omp_index i = 0; i < n; ++i) {
+                numEdges += std::distance(cbegin(i), cend(i));
+
+                for (auto it = cbegin(i), end = cend(i); it != end; ++it) {
+                    G.addPartialInEdge(unsafe, *it, i);
+                    numSelfLoops += (i == *it);
+                }
+            }
+
+        } else {
+            #pragma omp parallel for
+            for (omp_index i = 0; i < n; ++i) {
+                G.preallocateUndirected(i, degreeAt(i));
+
+                for (auto it = cbegin(i), end = cend(i); it != end; ++it)
+                    G.addPartialEdge(unsafe, i, *it);
+            }
+
+            for (omp_index i = 0; i < n; ++i) {
+                numEdges += std::distance(cbegin(i), cend(i));
+
+                for (auto it = cbegin(i), end = cend(i); it != end; ++it) {
+                    G.addPartialEdge(unsafe, *it, i);
+                    numSelfLoops += (i == *it);
+                }
+            }
+
         }
 
-        for(omp_index i=0; i < n; ++i) {
-            for (auto it = cbegin(i), end = cend(i); it != end; ++it)
-                G.addPartialEdge(unsafe, *it, i);
-        }
+        G.setEdgeCount(unsafe, numEdges);
+        G.setNumberOfSelfLoops(unsafe, numSelfLoops);
 
         return G;
     }
