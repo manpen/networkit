@@ -12,7 +12,6 @@
 #include <networkit/auxiliary/Random.hpp>
 #include <networkit/randomization/CurveballUniformTradeGenerator.hpp>
 
-
 namespace NetworKit {
 
 CurveballUniformTradeGenerator::value_type CurveballUniformTradeGenerator::generate() const {

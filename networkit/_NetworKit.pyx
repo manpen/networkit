@@ -11625,8 +11625,9 @@ cdef class CurveballGlobalTradeGenerator:
 cdef extern from "<networkit/randomization/Curveball.hpp>":
 
 	cdef cppclass _Curveball "NetworKit::Curveball"(_Algorithm):
-		_Curveball(_Graph) except +
-		void run(vector[pair[node, node]] trades) nogil except +
+		_Curveball(_Graph, bool_t allowSelfLoops, bool_t isBipartite) except +
+		void run(vector[pair[node, node]]& trades) nogil except +
+		void run(_CurveballUniformTradeGenerator&) nogil except +
 		_Graph getGraph() except +
 		vector[pair[node, node]] getEdges() except +
 		count getNumberOfAffectedEdges() except +
@@ -11654,6 +11655,10 @@ cdef class Curveball(Algorithm):
 	footprint which increases linearly with the number of trades
 	performed in a run.
 
+	PERFORMANCE NOTE: Processing of directed graphs is significantly
+	faster and requires less memory. Use directed graphs whenever
+	possible (e.g., for bipartite graphs ...)
+
 	Parameters
 	----------
 
@@ -11661,10 +11666,22 @@ cdef class Curveball(Algorithm):
 		The graph to be randomized. For a given degree sequence, e.g.
 		generators.HavelHakimi can be used to obtain this graph.
 
+	allowSelfLoops = False (may only be set for directed graphs)
+		If False extra steps are taken to prevent the creation of self-loops.
+		A limitation of Curveball (independently of this implementation) is
+		that it does not support undirected graphs with self-loops.
+		WARNING: If this input contains self-loops, behaivour is undefined.
+		WARNING: Preprocess a directed network without self-loops using
+		DegreePreservingShuffle. Otherwise, the result wont be a uniform sample.
+
+	isBipartite = False:
+		If True certain checks are disabled for slightly better performance.
+		WARNING: Only use this flag in case the provided trade sequence only
+		trades between nodes within the same bipartition class.
 	"""
-	def __cinit__(self, G):
+	def __cinit__(self, G, allowSelfLoops = False, isBipartite = False):
 		if isinstance(G, Graph):
-			self._this = new _Curveball((<Graph>G)._this)
+			self._this = new _Curveball((<Graph>G)._this, allowSelfLoops, isBipartite)
 		else:
 			raise RuntimeError("Parameter G has to be a graph")
 
@@ -11690,8 +11707,9 @@ cdef class Curveball(Algorithm):
 		if isinstance(trades, CurveballUniformTradeGenerator):
 			trades.forceInitialize()
 			with nogil:
-				trades_vec = (<_CurveballUniformTradeGenerator*>((<CurveballUniformTradeGenerator> trades)._this)).generate()
-				(<_Curveball*>(self._this)).run(trades_vec)
+				(<_Curveball*>(self._this)).run(
+					(<_CurveballUniformTradeGenerator*>((<CurveballUniformTradeGenerator> trades)._this))[0]
+				)
 		elif isinstance(trades, CurveballGlobalTradeGenerator):
 			with nogil:
 				trades_vec = (<_CurveballGlobalTradeGenerator*>((<CurveballGlobalTradeGenerator> trades)._this)).generate()

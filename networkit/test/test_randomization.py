@@ -32,6 +32,12 @@ class TestRandomization(unittest.TestCase):
 		self.graphs.append(nk.generators.ErdosRenyiGenerator(1004, 0.005, True).generate())
 		self.graphs.append(nk.generators.ErdosRenyiGenerator(1005, 0.05, True).generate())
 
+		self.graphsWithLoops = []
+		self.graphsWithLoops.append(nk.generators.ErdosRenyiGenerator(101, 0.05, True, True).generate())
+		self.graphsWithLoops.append(nk.generators.ErdosRenyiGenerator(102, 0.10, True, True).generate())
+		for G in self.graphsWithLoops:
+			self.assertGreater(G.numberOfSelfLoops(), 0)
+
 	def test_global_curveball(self):
 		for G in self.graphs:
 			algo = nk.randomization.GlobalCurveball(G, 5)
@@ -40,9 +46,7 @@ class TestRandomization(unittest.TestCase):
 			check_graphs(G, G2)
 
 	def test_global_curveball_with_selfloops(self):
-		for G in self.graphs:
-			if not G.isDirected(): continue
-
+		for G in self.graphsWithLoops:
 			algo = nk.randomization.GlobalCurveball(G, 5, True, True)
 			algo.run()
 			G2 = algo.getGraph()
@@ -98,6 +102,16 @@ class TestRandomization(unittest.TestCase):
 			n = G.numberOfNodes()
 			ts = nk.randomization.CurveballUniformTradeGenerator(5 * n, n)
 			algo = nk.randomization.Curveball(G)
+			algo.run(ts)
+			algo.run(ts)
+			G2 = algo.getGraph()
+			check_graphs(G, G2)
+
+	def test_curveball_with_selfloops(self):
+		for G in self.graphsWithLoops:
+			n = G.numberOfNodes()
+			ts = nk.randomization.CurveballUniformTradeGenerator(5 * n, n)
+			algo = nk.randomization.Curveball(G, True)
 			algo.run(ts)
 			algo.run(ts)
 			G2 = algo.getGraph()

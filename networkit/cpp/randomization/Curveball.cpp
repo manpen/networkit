@@ -5,8 +5,6 @@
  *      Author:  Hung Tran <htran@ae.cs.uni-frankfurt.de>, Manuel Penschuck <networkit@manuel.jetzt>
  */
 
-#include <networkit/auxiliary/Random.hpp>
-
 #include <networkit/randomization/Curveball.hpp>
 #include "curveball/CurveballImpl.hpp"
 
