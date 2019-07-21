@@ -1744,31 +1744,6 @@ TEST_P(GraphGTest, testForWeightedInNeighborsOf) {
 	}
 }
 
-TEST_P(GraphGTest, forInEdgesOf) {
-	std::vector<bool> visited(this->n_house, false);
-	this->Ghouse.forInEdgesOf(3, [&](node u, node v) {
-		ASSERT_EQ(3u, v);
-		ASSERT_TRUE(this->Ahouse[u][v] > 0.0);
-		ASSERT_TRUE(this->Ghouse.hasEdge(u, v));
-		ASSERT_FALSE(visited[u]);
-		visited[u] = true;
-	});
-
-	if (isDirected()) {
-		EXPECT_FALSE(visited[0]);
-		EXPECT_FALSE(visited[1]);
-		EXPECT_FALSE(visited[2]);
-		EXPECT_FALSE(visited[3]);
-		EXPECT_TRUE(visited[4]);
-	} else {
-		EXPECT_FALSE(visited[0]);
-		EXPECT_TRUE(visited[1]);
-		EXPECT_TRUE(visited[2]);
-		EXPECT_FALSE(visited[3]);
-		EXPECT_TRUE(visited[4]);
-	}
-}
-
 TEST_P(GraphGTest, testForWeightedInEdgesOf) {
 	// add self-loop
 	this->Ghouse.addEdge(3, 3, 2.5);
