@@ -1,15 +1,17 @@
 /*
  * NetworkitBinaryWriter.cpp
  *
- *@author Charmaine Ndolo <charmaine.ndolo@b-tu.de>
+ * @author Charmaine Ndolo <charmaine.ndolo@b-tu.de>
  */
 
-#include <networkit/io/NetworkitBinaryWriter.hpp>
+#include <cstring>
+#include <fstream>
+
 #include <networkit/auxiliary/Enforce.hpp>
 #include <networkit/io/NetworkitBinaryGraph.hpp>
+#include <networkit/io/NetworkitBinaryWriter.hpp>
+
 #include <tlx/math/clz.hpp>
-#include <fstream>
-#include <cstring>
 
 namespace NetworKit {
 
@@ -42,7 +44,7 @@ uint64_t NetworkitBinaryWriter::encodeZigzag(int64_t value) {
 	return (value << 1) ^ (value >> 31);
 }
 
-void NetworkitBinaryWriter::write(const Graph &G, const std::string& path) {
+void NetworkitBinaryWriter::write(const Graph &G, const std::string &path) {
 
 	std::ofstream outfile(path, std::ios::binary);
 	Aux::enforceOpened(outfile);
@@ -69,7 +71,7 @@ void NetworkitBinaryWriter::write(const Graph &G, const std::string& path) {
 		outfile.write(reinterpret_cast<char*>(&header.offsetWeights), sizeof(uint64_t));
 	};
 
-	nodes = G.numberOfNodes();
+	count nodes = G.numberOfNodes();
 	if (nodes < chunks) {
 		chunks = nodes;
 		INFO("reducing chunks to ", chunks, " chunks");
@@ -99,7 +101,7 @@ void NetworkitBinaryWriter::write(const Graph &G, const std::string& path) {
 			uint8_t tmp [10];
 			if(!G.isDirected()){
 				G.forNeighborsOf(n,[&](node v) {
-					if(v <= n) { 
+					if(v <= n) {
 						outNbrs++;
 						adjSize += encode(v, tmp);
 					} else if (v >= n) {
@@ -140,7 +142,7 @@ void NetworkitBinaryWriter::write(const Graph &G, const std::string& path) {
 			+ nodes * sizeof(uint8_t) // nodeFlags.
 			+ (chunks - 1) * sizeof(uint64_t); // firstVertex.
 	header.offsetAdjTranspose = header.offsetAdjLists
-			+ (chunks -1) * sizeof(uint64_t) // adjOffsets
+			+ (chunks - 1) * sizeof(uint64_t) // adjOffsets
 			+ sizeof(uint64_t) // adjListSize
 			+ adjOffsets.back(); // Size of data
 	header.offsetWeights = 0;
