@@ -362,53 +362,6 @@ class Test_SelfLoops(unittest.TestCase):
 		for i in range(G.numberOfNodes()):
 			self.assertEqual(G2.hasNode(i), (4 <= i <= 9))
 
-	def test_distance_Diameter(self):
-		D = distance.Diameter(self.LL, distance.DiameterAlgo.EstimatedRange, error = 0.1)
-		D.run()
-		D = distance.Diameter(self.LL, distance.DiameterAlgo.EstimatedSamples, nSamples = 5)
-		D.run()
-		D = distance.Diameter(self.LL, distance.DiameterAlgo.Exact)
-		D.run()
-
-
-	def test_distance_Eccentricity(self):
-		E = distance.Eccentricity()
-		E.getValue(self.LL, 0)
-
-
-	def test_distance_EffectiveDiameter(self):
-		algo = distance.EffectiveDiameter(self.L)
-		algo.run()
-		algo = distance.EffectiveDiameter(self.LL)
-		algo.run()
-
-
-	def test_distance_ApproxEffectiveDiameter(self):
-		algo = distance.EffectiveDiameterApproximation(self.L)
-		algo.run()
-		algo = distance.EffectiveDiameterApproximation(self.LL)
-		algo.run()
-
-
-	def test_distance_ApproxHopPlot(self):
-		algo = distance.HopPlotApproximation(self.L)
-		algo.run()
-		algo = distance.HopPlotApproximation(self.LL)
-		algo.run()
-
-
-	def test_distance_NeighborhoodFunction(self):
-		algo = distance.NeighborhoodFunction(self.L)
-		algo.run()
-		algo = distance.NeighborhoodFunction(self.LL)
-		algo.run()
-
-
-	def test_distance_ApproxNeighborhoodFunction(self):
-		algo = distance.NeighborhoodFunctionApproximation(self.L)
-		algo.run()
-		algo = distance.NeighborhoodFunctionApproximation(self.LL)
-		algo.run()
 
 
 if __name__ == "__main__":

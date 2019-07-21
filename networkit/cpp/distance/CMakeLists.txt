@@ -11,6 +11,7 @@ networkit_add_module(distance
     Diameter.cpp
     Dijkstra.cpp
     Eccentricity.cpp
+    EdgeSetDistance.cpp
     EffectiveDiameter.cpp
     EffectiveDiameterApproximation.cpp
     GraphDistance.cpp
