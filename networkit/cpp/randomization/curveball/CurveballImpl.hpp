@@ -47,7 +47,9 @@ public:
     {}
 
 	void run(const trade_vector &trades) {
-        tradeList.initialize(trades);
+        if (!isDirected) {
+            tradeList.initialize(trades);
+        }
         initialize();
 
         Aux::SignalHandler handler;
@@ -120,9 +122,15 @@ protected:
             maxDegree = G.maxDegree();
 
             // TODO: Do it in parallel
-            G.forEdges([&](node u, node v) {
-                update(u, v);
-            });
+            if (isDirected) {
+                G.forNodes([&] (node u) {
+                    adjList.setNeighbours(u, G.neighborRange(u));
+                });
+            } else {
+                G.forEdges([&](node u, node v) {
+                    update(u, v);
+                });
+            }
 
             common_neighbours.reserve(maxDegree);
             disjoint_neighbours.reserve(maxDegree);
@@ -140,18 +148,15 @@ protected:
     }
 
     void update(const node a, const node b) {
-        if (isDirected) {
+        assert(!isDirected);
+
+        const tradeid ta = *(tradeList.getTrades(a));
+        const tradeid tb = *(tradeList.getTrades(b));
+
+        if (std::tie(ta, a) <= std::tie(tb, b)) {
             adjList.insertNeighbour(a, b);
-
         } else {
-            const tradeid ta = *(tradeList.getTrades(a));
-            const tradeid tb = *(tradeList.getTrades(b));
-
-            if (std::tie(ta, a) <= std::tie(tb, b)) {
-                adjList.insertNeighbour(a, b);
-            } else {
-                adjList.insertNeighbour(b, a);
-            }
+            adjList.insertNeighbour(b, a);
         }
     }
 
@@ -168,8 +173,13 @@ protected:
         const auto u_begin = adjList.begin(u);
         const auto v_begin = adjList.begin(v);
 
-        auto u_end = adjList.end(u);
-        auto v_end = adjList.end(v);
+        // internally .end() requires two random access, while degreeAt uses the same
+        // data as .begin(); hence we can save an unstructured IO in the directed case.
+        auto u_end = u_begin + adjList.degreeAt(u);
+        auto v_end = v_begin + adjList.degreeAt(v);
+
+        assert(u_end == adjList.end(u));
+        assert(v_end == adjList.end(v));
 
         // Check whether there exist edges of form (u, v) or (v, u).
         // If this is the case, they are removed from the neighbourhood

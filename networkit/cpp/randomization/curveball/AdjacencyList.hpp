@@ -150,6 +150,12 @@ public:
         offsets[node_id]++;
     }
 
+    template <typename Range>
+    void setNeighbours(const node node_id, Range&& range) {
+        offsets[node_id] = std::distance(range.begin(), range.end());
+        std::copy(range.begin(), range.end(), begin(node_id));
+    }
+
     node numberOfNodes() const {
         return static_cast<node>(offsets.size());
     }
