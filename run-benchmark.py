@@ -55,13 +55,13 @@ def computePerturbation(G, nTrades, nodeLower, nodeUpper):
 
 print("Loading graphs")
 datasets = []
-for fn in glob("netflix100*.nkb"):
+for fn in glob("netflix1000*.nkb"):
     start = time.time()
     G, nLeft, nRight = loadGraph(fn)
     mid = time.time()
-    datasets.append((G, "l", nLeft, nRight))
+    datasets.append((G, "l", 0, nLeft))
     print(" ... transpose")
-    datasets.append((G.transpose(), "r", nRight, nLeft))
+    datasets.append((G.transpose(), "r", nLeft, nLeft + nRight))
     end = time.time()
     print(" ... took (%.1f ms and %.1f ms)" % (1000 * (mid - start), 1000 * (end - mid)))
 
@@ -69,20 +69,26 @@ with open("nk-curveball.csv", "w") as out:
     out.write("algo,iter,nNodes,nEdges,activeSide,nActive,nTrades,timeMS\n")
 
     for iter in range(10):
-        for (G, activeSide, nLeft, nRight) in datasets:
+        for (G, activeSide, lower, upper) in datasets:
+            assert(G.isDirected())
+
+            for i in range(lower, upper):
+                assert(G.degreeIn(i) == 0)
+
             for directed in [True, False]:
-                nTrades = 10 * nRight
+                nActive = upper - lower
+                nTrades = 10 * nActive
                 print("Run with nRight = %d ..." % nRight)
                 if directed:
                     duration = benchmarkCurveball(G, nTrades, 0, nLeft)
                 else:
-                    duration = benchmarkCurveball(G.toUndirected(), nTrades, 0, nLeft)
+                    duration = benchmarkCurveball(G.toUndirected(), nTrades, lower, upper)
 
                 print(" ... took %f ms" % duration)
 
                 out.write("nkcb-%s,%d,%d,%d,%s,%d,%d,%f\n" % (
                     "direct" if directed else "undirect",
                     iter, G.numberOfNodes(), G.numberOfEdges(),
-                    activeSide, nLeft, nTrades, duration
+                    activeSide, nActive, nTrades, duration
                 ))
                 out.flush()
