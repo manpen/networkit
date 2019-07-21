@@ -124,7 +124,10 @@ protected:
                 update(u, v);
             });
 
-        } else {
+            common_neighbours.reserve(maxDegree);
+            disjoint_neighbours.reserve(maxDegree);
+
+        } else if (!isDirected) {
             nodepair_vector edges = adjList.getEdges();
 
             adjList.restructure();
@@ -134,8 +137,6 @@ protected:
             }
         }
 
-        common_neighbours.reserve(maxDegree);
-        disjoint_neighbours.reserve(maxDegree);
     }
 
     void update(const node a, const node b) {
