@@ -11,7 +11,6 @@
 #include <sstream>
 
 #include <networkit/graph/Graph.hpp>
-#include <networkit/graph/GraphBuilder.hpp>
 
 namespace NetworKit {
 
@@ -1036,21 +1035,36 @@ std::vector<node> Graph::neighbors(node u) const {
 Graph Graph::transpose() const {
 	if (directed == false) {
 		throw std::runtime_error("The transpose of an undirected graph is "
-		                         "identical to the original graph.");
+								 "identical to the original graph.");
 	}
 
-	GraphBuilder gB(z, weighted, true);
+	Graph GTranspose(z, weighted, true);
 
-	this->forEdges([&](node u, node v) { gB.addHalfEdge(v, u, weight(u, v)); });
-
-	Graph GTranspose = gB.toGraph(true);
+	#pragma omp parallel for
 	for (node u = 0; u < z; ++u) {
-		if (!exists[u]) {
+		if (exists[u]) {
+			GTranspose.preallocateDirected(u, degreeIn(u), degreeOut(u));
+
+			forInEdgesOf(u, [&] (node, node v, edgeweight w, edgeid id) {
+				GTranspose.addPartialOutEdge(unsafe, u, v, id, w); // TODO: WILL BREAK AFTER PR 380 (switch id, w)
+			});
+
+			forEdgesOf(u, [&] (node, node v, edgeweight w, edgeid id) {
+				GTranspose.addPartialInEdge(unsafe, u, v, id, w);  // TODO: WILL BREAK AFTER PR 380 (switch id, w)
+			});
+
+		} else {
 			GTranspose.removeNode(u);
 		}
 	}
+
+	GTranspose.setEdgeCount(unsafe, numberOfEdges());
+	GTranspose.setNumberOfSelfLoops(unsafe, numberOfSelfLoops());
 	GTranspose.t = t;
 	GTranspose.setName(getName() + "Transpose");
+
+	assert(GTranspose.checkConsistency());
+
 	return GTranspose;
 }
 
