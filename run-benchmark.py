@@ -61,7 +61,7 @@ with open("nk-curveball.csv", "w") as out:
 
             for directed in [True, False]:
                 nActive = upper - lower
-                nTrades = 100 # * nActive
+                nTrades = 10 * nActive
                 print("Run on [%d, %d) with nRight = %d, directed = %d, side = %s ..." % (lower, upper, nRight, directed, activeSide))
                 if directed:
                     duration = benchmarkCurveball(G, nTrades, lower, upper)
