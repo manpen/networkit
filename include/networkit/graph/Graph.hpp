@@ -44,19 +44,40 @@ inline bool operator<(const WeightedEdge &e1, const WeightedEdge &e2) {
 struct Edge {
     node u, v;
 
-    Edge(node _u, node _v, bool sorted = false) {
-        if (sorted) {
-            u = std::min(_u, _v);
-            v = std::max(_u, _v);
-        } else {
-            u = _u;
-            v = _v;
-        }
+    Edge(node u, node v, bool sorted = false) noexcept :
+        u(u), v(v)
+    {
+        if (sorted)
+            sort();
     }
+
+    Edge(const Edge&) noexcept = default;
+    Edge(Edge&&) noexcept = default;
+
+    Edge& operator=(const Edge&) noexcept = default;
+    Edge& operator=(Edge&&) noexcept = default;
+
+    bool isLoop() const noexcept {
+        return u == v;
+    }
+
+    void sort() const noexcept {
+        std::tie(u, v) = std::minmax(u, v);
+    }
+
+    void flip() const noexcept {
+        std::swap(u, v);
+    }
+
+// compare
+    bool operator==(const Edge &o) const noexcept {return std::tie(u, v) == std::tie(o.u, o.v);}
+    bool operator!=(const Edge &o) const noexcept {return std::tie(u, v) != std::tie(o.u, o.v);}
+    bool operator<=(const Edge &o) const noexcept {return std::tie(u, v) <= std::tie(o.u, o.v);}
+    bool operator>=(const Edge &o) const noexcept {return std::tie(u, v) >= std::tie(o.u, o.v);}
+    bool operator< (const Edge &o) const noexcept {return std::tie(u, v) <  std::tie(o.u, o.v);}
+    bool operator> (const Edge &o) const noexcept {return std::tie(u, v) >  std::tie(o.u, o.v);}
 };
-inline bool operator==(const Edge &e1, const Edge &e2) {
-    return e1.u == e2.u && e1.v == e2.v;
-}
+
 struct Unsafe {};
 static constexpr Unsafe unsafe {};
 } // namespace NetworKit
