@@ -27,7 +27,7 @@ protected:
 
 
 public:
-	StaticDegreeSequenceGenerator(const std::vector<count>& sequence);
+	explicit StaticDegreeSequenceGenerator(const std::vector<count>& sequence);
 
 	/**
 	 * Erdoes-Gallai test if degree sequence seq is realizable.
@@ -36,8 +36,6 @@ public:
 
 	virtual bool getRealizable() const;
 
-
-	virtual Graph generate() = 0;
 };
 
 } /* namespace NetworKit */
