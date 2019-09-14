@@ -57,16 +57,34 @@ struct Edge {
     Edge& operator=(const Edge&) noexcept = default;
     Edge& operator=(Edge&&) noexcept = default;
 
+// manipulate
+    void sort() noexcept {
+        std::tie(u, v) = std::minmax(u, v);
+    }
+
+    Edge sorted() const noexcept {
+        return Edge{u, v, true};
+    }
+
+    void flip() noexcept {
+        std::swap(u, v);
+    }
+
+    Edge flipped() const noexcept {
+        return Edge{v, u};
+    }
+
+// checks
     bool isLoop() const noexcept {
         return u == v;
     }
 
-    void sort() const noexcept {
-        std::tie(u, v) = std::minmax(u, v);
+    bool isIncident(const node x) const noexcept {
+        return u == x || v == x;
     }
 
-    void flip() const noexcept {
-        std::swap(u, v);
+    bool isIncident(const Edge e) const noexcept {
+        return isIncident(e.u) || isIncident(e.v);
     }
 
 // compare

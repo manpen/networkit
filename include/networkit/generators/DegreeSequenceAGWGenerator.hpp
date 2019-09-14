@@ -10,7 +10,9 @@
 
 #include <vector>
 
-#include <networkit/Graph.hpp>
+#include <tlx/container/btree_set.hpp>
+
+#include <networkit/graph/Graph.hpp>
 #include <networkit/generators/StaticDegreeSequenceGenerator.hpp>
 
 namespace NetworKit {
@@ -29,19 +31,29 @@ public:
 
 private:
     // statistics of and values derived from sequence
-    const count num_nodes;            ///< number of nodes
-    const count sum_degrees;          ///< sum of degrees
-    const count num_edges;            ///< number of edges, i.e. m=M/2
-    const count max_degree;           ///< maximum entry in degrees
-    const count num_two_paths;        ///< number of two path sum_i d_i * (d_i - 1)
-    const count num_max_loops;        ///< maximal number of loops
-    const count num_max_double_edges; ///< maximal number of double edges
+    count num_nodes;            ///< number of nodes
+    count sum_degrees;          ///< sum of degrees
+    count num_edges;            ///< number of edges, i.e. m=M/2
+    count max_degree;           ///< maximum entry in degrees
+    count num_two_paths;        ///< number of two path sum_i d_i * (d_i - 1)
+    count num_max_loops;        ///< maximal number of loops
+    count num_max_double_edges; ///< maximal number of double edges
+    std::vector<node> node_stubs;
 
-    std::vector<Node> node_stubs;
-    std::vector<Edge> edges;
+    /**
+     * Computes all statistics and values based on the degree sequences alone.
+     * These results remain valid even after a rejection in later phases and won't be repeated.
+     */
+    void initializeStats();
 
-    std::vector<node> nodes_with_loop;
-    std::vector<Edge> double_edges;
+    // representation of multigraph which get iteratively merged into simple graph
+    std::vector<Edge>    edges;
+    tlx::btree_set<Edge> edge_set;
+    std::vector<node>    nodes_with_loop;
+    std::vector<Edge>    double_edges;
+    std::vector<count>   simple_degrees;
+
+    count num_simple_twopaths; ///< Number of simple 2-path, i.e. (u,v,w) with (u,v) and (v,w) being simple edges and v without loop
 
     /**
      * Samples the edge list of a multigraph subject to the following constraints:
@@ -55,15 +67,24 @@ private:
      * u < v.
      *
      * Precondition: degrees must be realizable.
+     *
+     * @return true: continue, false: reject
      */
-    void sampleInitialMultiGraph(count allowed_num_loops, count allowed_num_double_edges);
+    bool sampleInitialMultiGraph();
 
-    void removeLoops();
+    bool removeLoops();
+    bool removeDoubleEdges();
 
     /**
      * Create a graph from the vector edges assuming it satisfies the degree distribution in seq.
      */
     Graph graphFromEdgeList() const;
+
+    static constexpr count two_path_from_degree(count deg) {
+        // don't care about underflows, since if (x-1) underflows x will be zero and so will be x(x-1) ...
+        // cast only to avoid warnings
+        return static_cast<count>(deg * (static_cast<int64_t>(deg)-1));
+    }
 };
 
 } // namespace NetworKit
