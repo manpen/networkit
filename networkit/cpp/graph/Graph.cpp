@@ -46,16 +46,15 @@ Graph::Graph(std::initializer_list<WeightedEdge> edges) : Graph(0, true) {
 	using namespace std;
 
 	/* Number of nodes = highest node index + 1 */
-	for (const auto &edge : edges) {
-		node x = max(edge.u, edge.v);
-		while (numberOfNodes() <= x) {
+	for (auto edge : edges) {
+		while (numberOfNodes() <= edge.sorted().second) {
 			addNode();
 		}
 	}
 
 	/* Now add all of the edges */
 	for (const auto &edge : edges) {
-		addEdge(edge.u, edge.v, edge.weight);
+		addEdge(edge.first, edge.second, edge.weight);
 	}
 }
 
@@ -913,7 +912,7 @@ bool Graph::hasEdge(node u, node v) const {
 	}
 }
 
-std::pair<node, node> Graph::randomEdge(bool uniformDistribution) const {
+Edge Graph::randomEdge(bool uniformDistribution) const {
 	if (m == 0) {
 		throw std::runtime_error("Error: the graph has ne edges!");
 	}
@@ -928,15 +927,15 @@ std::pair<node, node> Graph::randomEdge(bool uniformDistribution) const {
 		u = randomNode();
 	} while (outEdges[u].empty());
 	v = randomNeighbor(u);
-	return std::make_pair(u, v);
+	return {u, v};
 }
 
-std::vector<std::pair<node, node>> Graph::randomEdges(count nr) const {
+std::vector<Edge> Graph::randomEdges(count nr) const {
 	if (numberOfEdges() == 0) {
 		throw std::runtime_error(
 		    "Graph has no edges to sample from. Add edges to the graph first.");
 	}
-	std::vector<std::pair<node, node>> edges;
+	std::vector<Edge> edges;
 
 	std::default_random_engine gen{std::random_device{}()};
 	std::vector<count> outDeg(upperNodeIdBound());
@@ -964,7 +963,7 @@ std::vector<std::pair<node, node>> Graph::randomEdges(count nr) const {
 				v = randomNeighbor(u);
 			} while (u > v);
 		}
-		edges.push_back({u, v});
+		edges.emplace_back(u, v);
 	}
 
 	return edges;
@@ -1052,11 +1051,10 @@ std::vector<node> Graph::nodes() const {
 	return nodes;
 }
 
-std::vector<std::pair<node, node>> Graph::edges() const {
-	std::vector<std::pair<node, node>> edges;
+std::vector<Edge> Graph::edges() const {
+	std::vector<Edge> edges;
 	edges.reserve(numberOfEdges());
-	this->forEdges(
-	    [&](node u, node v) { edges.push_back(std::pair<node, node>(u, v)); });
+	forEdges([&] (node u, node v) { edges.emplace_back(u, v); });
 	return edges;
 }
 

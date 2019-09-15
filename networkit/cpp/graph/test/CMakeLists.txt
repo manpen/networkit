@@ -1,3 +1,4 @@
+networkit_add_test(graph EdgeGTest)
 networkit_add_test(graph GraphBuilderAutoCompleteGTest auxiliary)
 networkit_add_test(graph GraphBuilderDirectSwapGTest auxiliary)
 networkit_add_test(graph GraphGTest

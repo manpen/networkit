@@ -21,7 +21,7 @@ void RandomNodeEdgeScore::run() {
 	Graph sparseGraph = G;
 	std::vector<double> workScores(G.upperEdgeIdBound(), 0);
 	count numRemoved = 0;
-	std::vector< std::pair<node, node> > uniformlyRandomEdges;
+	std::vector<Edge> uniformlyRandomEdges;
 
 	while (sparseGraph.numberOfEdges() > 0) {
 		if (Aux::Random::real() >= rneRatio) { // uniformly random

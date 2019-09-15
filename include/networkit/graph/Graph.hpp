@@ -22,61 +22,18 @@
 #include <networkit/auxiliary/FunctionTraits.hpp>
 #include <networkit/auxiliary/Log.hpp>
 #include <networkit/auxiliary/Random.hpp>
+#include <networkit/graph/Edge.hpp>
 #include <networkit/viz/Point.hpp>
 #include <networkit/graph/Coordinates.hpp>
 #include <tlx/define/deprecated.hpp>
 
 namespace NetworKit {
 
-/**
- * A weighted edge used for the graph constructor with
- * initializer list syntax.
- */
-struct WeightedEdge {
-    node u, v;
-    edgeweight weight;
-
-    WeightedEdge(node u, node v, edgeweight w) : u(u), v(v), weight(w) {}
-};
-inline bool operator<(const WeightedEdge &e1, const WeightedEdge &e2) {
-    return e1.weight < e2.weight;
-}
-struct Edge {
-    node u, v;
-
-    Edge(node _u, node _v, bool sorted = false) {
-        if (sorted) {
-            u = std::min(_u, _v);
-            v = std::max(_u, _v);
-        } else {
-            u = _u;
-            v = _v;
-        }
-    }
-};
-inline bool operator==(const Edge &e1, const Edge &e2) {
-    return e1.u == e2.u && e1.v == e2.v;
-}
 struct Unsafe {};
 static constexpr Unsafe unsafe {};
-} // namespace NetworKit
-
-namespace std {
-template <> struct hash<NetworKit::Edge> {
-    size_t operator()(const NetworKit::Edge &e) const {
-        return hash_node(e.u) ^ hash_node(e.v);
-    }
-
-    hash<NetworKit::node> hash_node;
-};
-} // namespace std
-
-namespace NetworKit {
 
 // forward declaration to randomization/CurveballImpl.h
-namespace CurveballDetails {
-class CurveballMaterialization;
-}
+namespace CurveballDetails {class CurveballMaterialization;}
 
 /**
  * @ingroup graph
@@ -1121,13 +1078,13 @@ class Graph final {
      * give you a real uniform distributed edge, but will be very slow. So
      * only use uniformDistribution for single calls outside of any loops.
      */
-    std::pair<node, node> randomEdge(bool uniformDistribution = false) const;
+    Edge randomEdge(bool uniformDistribution = false) const;
 
     /**
      * Returns a vector with nr random edges. The edges are chosen uniform
      * random.
      */
-    std::vector<std::pair<node, node>> randomEdges(count nr) const;
+    std::vector<Edge> randomEdges(count nr) const;
 
     /* GLOBAL PROPERTIES */
 
@@ -1343,7 +1300,7 @@ class Graph final {
      * Get list of edges as node pairs.
      * @return List of edges as node pairs.
      */
-    std::vector<std::pair<node, node>> edges() const;
+    std::vector<Edge> edges() const;
 
     /**
      * Get list of neighbors of @a u.
