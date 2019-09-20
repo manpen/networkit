@@ -798,18 +798,26 @@ void Graph::removeAllEdges() {
 #pragma omp parallel for
 	for (omp_index u = 0; u < z; ++u) {
 		outEdges[u].clear();
-		if (isWeighted()) {
+		if (isWeighted())
 			outEdgeWeights[u].clear();
-		}
+
+		if (edgesIndexed)
+			outEdgeIds[u].clear();
+
 		if (isDirected()) {
 			inEdges[u].clear();
-			if (isWeighted()) {
+			if (isWeighted())
 				inEdgeWeights[u].clear();
-			}
+
+			if (edgesIndexed)
+				inEdgeIds[u].clear();
 		}
 	}
 
 	m = 0;
+	storedNumberOfSelfLoops = 0;
+	omega = 0;
+	edgesIndexed = false;
 }
 
 void Graph::removeEdgesFromIsolatedSet(const std::vector<node> &nodesInSet) {
