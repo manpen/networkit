@@ -819,10 +819,13 @@ TEST_P(GraphGTest, testRemoveAllEdges) {
 		EXPECT_EQ(g.degree(u), 0);
 	}
 
-	g = ErdosRenyiGenerator(20, 0.1, true).generate();
+	g = ErdosRenyiGenerator(20, 0.5, true).generate();
+	g.indexEdges(true);
+	EXPECT_GT(g.numberOfSelfLoops(), 0); // odds are ~1e-6 that we do not have a single self-loop
 	g.removeAllEdges();
 	EXPECT_EQ(g.numberOfEdges(), 0);
 	EXPECT_EQ(g.edges().size(), 0);
+	EXPECT_EQ(g.numberOfSelfLoops(), 0);
 	for (node u : g.nodes()) {
 		EXPECT_EQ(g.degree(u), 0);
 		EXPECT_EQ(g.degree(u), 0);
