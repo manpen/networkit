@@ -8,6 +8,9 @@
 #ifndef MOCNIKGENERATOR_H_
 #define MOCNIKGENERATOR_H_
 
+#include <vector>
+
+#include <networkit/graph/Graph.hpp>
 #include <networkit/generators/StaticGraphGenerator.hpp>
 
 namespace NetworKit {
@@ -15,7 +18,7 @@ namespace NetworKit {
 /**
  * @ingroup generators
  */
-class MocnikGenerator: public StaticGraphGenerator {
+class MocnikGenerator final : public StaticGraphGenerator {
 private:
 	// GENERAL DATA
 
@@ -27,23 +30,20 @@ private:
 
 	// DATA FOR EACH LAYER
 
-	/**
-	 * Collection of nodes.
-	 */
-	typedef std::vector<node> NodeCollection;
+	using NodeCollection = std::vector<node>;
 
 	/**
 	 * The cell array reflects how nodes are assigned to a grid. Each element of
 	 * the vector corresponds to one grid cell.
 	 */
-	typedef std::vector<NodeCollection> CellArray;
+	using CellArray = std::vector<NodeCollection>;
 
 	/**
 	 * State of a layer
 	 */
 	struct LayerState {
 		CellArray a;
-		int aMax;
+		count aMax;
 	};
 
 	// FUNCTIONS RELATED TO THE LAYER STATE
@@ -52,43 +52,43 @@ private:
 	 * Initialize the cell array.  The second parameter determines how many grid
 	 * cells shall be contained in each dimension of the cell array.
 	 */
-	void initCellArray(LayerState &s, const count &numberOfCellsPerDimension);
+	void initCellArray(LayerState &s, const count numberOfCellsPerDimension);
 
 	/**
 	 * Get all nodes that are contained in the i-th grid cell
 	 */
-	NodeCollection getNodes(LayerState &s, const int &i);
+	NodeCollection getNodes(LayerState &s, const count i);
 
 	/**
 	 * Add the node with number j to the corresponing grid cell
 	 */
-	void addNode(LayerState &s, const int &j);
+	void addNode(LayerState &s, const count j);
 
 	/**
 	 * Determine, for a given position, the index of the corresponding grid cell
 	 */
-	int toIndex(LayerState &s, const std::vector<double> &v);
+	count toIndex(LayerState &s, const std::vector<double> &v);
 
 	/**
 	 * Determine, for the given multi-dimensional index, the index of the
 	 * corresponding grid cell
 	 */
-	int toIndex(LayerState &s, const std::vector<int> &v);
+	count toIndex(LayerState &s, const std::vector<count> &v);
 
 	/**
 	 * Determine, for a given index, the multi-dimensional index of a grid cell
 	 */
-	const std::vector<int> fromIndex(LayerState &s, const int &i);
+	const std::vector<count> fromIndex(LayerState &s, const count i);
 
 	/**
 	 * Determine for a grid cell given by index i the grid cells of distance r
 	 */
-	const std::vector<int> boxSurface(LayerState &s, const int &i, const int &r);
+	const std::vector<count> boxSurface(LayerState &s, const count i, const count r);
 
 	/**
 	 * Determine for a grid cell given by index i the grid cells within distance r
 	 */
-	const std::vector<int> boxVolume(LayerState &s, const int &j, const double &r);
+	const std::vector<count> boxVolume(LayerState &s, const count j, const double r);
 
 	// EDGE GENERATION
 
@@ -97,7 +97,7 @@ private:
 	 * provided relative weight.  If it is indicated that the edge is part of the
 	 * base layer, it is not tested whether the edge already exists inside the graph.
 	 */
-	void addEdgesToGraph(Graph &G, const count &n, const double &k, const double &relativeWeight, const bool &baseLayer);
+	void addEdgesToGraph(Graph &G, const count n, const double k, const double relativeWeight, const bool baseLayer);
 
 protected:
 	count dim;
@@ -140,7 +140,7 @@ public:
 	MocnikGenerator(count dim, std::vector<count> ns, double k, std::vector<double> weighted);
 	MocnikGenerator(count dim, std::vector<count> ns, std::vector<double> ks, std::vector<double> weighted);
 
-	virtual Graph generate();
+	Graph generate() override;
 };
 
 } /* namespace NetworKit */

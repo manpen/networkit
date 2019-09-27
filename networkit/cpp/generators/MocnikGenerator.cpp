@@ -5,9 +5,11 @@
  * Author: Franz-Benjamin Mocnik <mail@mocnik-science.net>
  */
 
+#include <algorithm>
+
 #include <networkit/generators/MocnikGenerator.hpp>
 #include <networkit/auxiliary/Random.hpp>
-#include <cmath>
+
 
 namespace NetworKit {
 
@@ -40,7 +42,8 @@ MocnikGenerator::MocnikGenerator(count dim, std::vector<count> ns, std::vector<d
 /**
  * For a vector of pairs, get the pair with the maximal second component
  */
-template<typename KeyType, typename ValueType> std::pair<KeyType,ValueType> getMax(const std::map<KeyType,ValueType> &x) {
+template<typename KeyType, typename ValueType> 
+static inline std::pair<KeyType,ValueType> getMax(const std::map<KeyType,ValueType> &x) {
 	using pairtype=std::pair<KeyType,ValueType>;
 	return *std::max_element(x.begin(), x.end(), [](const pairtype &p1, const pairtype &p2) {
 		return p1.second < p2.second;
@@ -74,7 +77,7 @@ static inline double dist(std::vector<double> &v, std::vector<double> &w) {
 
 // LAYER STATE
 
-void MocnikGenerator::initCellArray(MocnikGenerator::LayerState &s, const count &numberOfCellsPerDimension) {
+void MocnikGenerator::initCellArray(MocnikGenerator::LayerState &s, const count numberOfCellsPerDimension) {
 	s.aMax = numberOfCellsPerDimension;
 	for (count j = 0; j < std::pow(s.aMax, dim); j++) {
 		NodeCollection tmp;
@@ -82,85 +85,87 @@ void MocnikGenerator::initCellArray(MocnikGenerator::LayerState &s, const count 
 	}
 }
 
-MocnikGenerator::NodeCollection MocnikGenerator::getNodes(MocnikGenerator::LayerState &s, const int &i) {
+MocnikGenerator::NodeCollection MocnikGenerator::getNodes(MocnikGenerator::LayerState &s, const count i) {
 	return s.a[i];
 }
 
-void MocnikGenerator::addNode(MocnikGenerator::LayerState &s, const int &j) {
+void MocnikGenerator::addNode(MocnikGenerator::LayerState &s, const count j) {
 	s.a[toIndex(s, nodePositions[j])].push_back(j);
 }
 
-int MocnikGenerator::toIndex(MocnikGenerator::LayerState &s, const std::vector<double> &v) {
-	std::vector<int> w;
+count MocnikGenerator::toIndex(MocnikGenerator::LayerState &s, const std::vector<double> &v) {
+	std::vector<count> w;
+    w.reserve(v.size());
 	for (count j = 0; j < v.size(); j++) {
-		w.push_back(fmin(floor(v[j] * s.aMax), s.aMax - 1));
+		w.push_back(std::min(static_cast<count>(std::floor(v[j] * s.aMax)), s.aMax - 1));
 	}
 	return toIndex(s, w);
 }
 
-int MocnikGenerator::toIndex(MocnikGenerator::LayerState &s, const std::vector<int> &v) {
-	int x = 0;
+count MocnikGenerator::toIndex(MocnikGenerator::LayerState &s, const std::vector<count> &v) {
+	count x = 0;
 	for (count j = v.size() - 1; j < v.size(); j--) {
 		x = x * s.aMax + v[j];
 	}
 	return x;
 }
 
-const std::vector<int> MocnikGenerator::fromIndex(MocnikGenerator::LayerState &s, const int &i) {
-	std::vector<int> v;
-	int i2 = i;
+const std::vector<count> MocnikGenerator::fromIndex(MocnikGenerator::LayerState &s, const count i) {
+	std::vector<count> v;
+    v.reserve(dim);
+	count i2 = i;
 	for (count j = 0; j < dim; j++) {
-		int i2New = i2 % s.aMax;
+		count i2New = i2 % s.aMax;
 		v.push_back(i2New);
 		i2 = (i2 - i2New) / s.aMax;
 	}
 	return v;
 }
 
-const std::vector<int> MocnikGenerator::boxSurface(MocnikGenerator::LayerState &s, const int &i, const int &r) {
+const std::vector<count> MocnikGenerator::boxSurface(MocnikGenerator::LayerState &s, const count i, const count r) {
 	// test for vanishing r
 	if (r == 0) {
-		std::vector<int> seResult;
+		std::vector<count> seResult;
 		seResult.push_back(i);
 		return seResult;
 	}
 	// find all boxes
-	std::vector<std::vector<int>> se;
-	std::vector<int> iV = fromIndex(s, i);
+	std::vector<std::vector<count>> se;
+	std::vector<count> iV = fromIndex(s, i);
 	for (count d = 0; d < dim; d++) {
-		std::vector<std::vector<int>> v;
-		std::vector<int> tmp;
+		std::vector<std::vector<count>> v;
+		std::vector<count> tmp;
 		v.push_back(tmp);
 		for (count j = 0; j < d; j++) {
-			std::vector<std::vector<int>> w;
-			for (int mu = fmax(iV[j] - r + 1, 0); mu <= fmin(iV[j] + r - 1, s.aMax - 1); mu++) {
-				for (std::vector<int> &vElem : v) {
-					std::vector<int> x(vElem);
+			std::vector<std::vector<count>> w;
+			for (count mu = std::max(iV[j] - r + 1, 0llu); mu <= std::min(iV[j] + r - 1, s.aMax - 1); mu++) {
+				for (std::vector<count> &vElem : v) {
+					std::vector<count> x(vElem);
 					x.push_back(mu);
 					w.push_back(x);
 				}
 			}
 			v = w;
 		}
-		std::vector<std::vector<int>> w;
-		for (std::vector<int> &vElem : v) {
+		std::vector<std::vector<count>> w;
+		for (std::vector<count> &vElem : v) {
 			if (iV[d] - r >= 0) {
-				std::vector<int> x(vElem);
+				std::vector<count> x(vElem);
 				x.push_back(iV[d] - r);
 				w.push_back(x);
 			}
 			if (iV[d] + r < s.aMax) {
-				std::vector<int> x(vElem);
+				std::vector<count> x(vElem);
 				x.push_back(iV[d] + r);
 				w.push_back(x);
 			}
 		}
 		v = w;
 		for (count j = d + 1; j < dim; j++) {
-			std::vector<std::vector<int>> w;
-			for (int mu = fmax(iV[j] - r, 0); mu <= fmin(iV[j] + r, s.aMax - 1); mu++) {
-				for (std::vector<int> &vElem : v) {
-					std::vector<int> x(vElem);
+			std::vector<std::vector<count>> w;
+			for (count mu = std::max(iV[j] - r, 0llu); mu <= std::min(iV[j] + r, s.aMax - 1); mu++) {
+				for (std::vector<count> &vElem : v) {
+					std::vector<count> x(vElem);
 					x.push_back(mu);
 					w.push_back(x);
 				}
@@ -170,8 +175,8 @@ const std::vector<int> MocnikGenerator::boxSurface(MocnikGenerator::LayerState &
 		se.insert(se.end(), v.begin(), v.end());
 	}
 	// convert the list of grid cells from a multi to a one-dimensional index
-	std::vector<int> seResult;
-	for (std::vector<int> &v : se) {
+	std::vector<count> seResult;
+	for (std::vector<count> &v : se) {
 		seResult.push_back(toIndex(s, v));
 	}
 	// remove double numbers from the list of grid cells
@@ -180,18 +185,18 @@ const std::vector<int> MocnikGenerator::boxSurface(MocnikGenerator::LayerState &
 	return seResult;
 }
 
-const std::vector<int> MocnikGenerator::boxVolume(MocnikGenerator::LayerState &s, const int &i, const double &r) {
-	int r2 = ceil(r * s.aMax);
-	std::vector<std::vector<int>> se;
-	std::vector<int> tmp;
+const std::vector<count> MocnikGenerator::boxVolume(MocnikGenerator::LayerState &s, const count i, const double r) {
+	const auto r2 = static_cast<count>(std::ceil(r * s.aMax));
+	std::vector<std::vector<count>> se;
+	std::vector<count> tmp;
 	se.push_back(tmp);
-	std::vector<int> iV = fromIndex(s, i);
+	std::vector<count> iV = fromIndex(s, i);
 	// find all boxes
 	for (count d = 0; d < dim; d++) {
-		std::vector<std::vector<int>> w;
-		for (int mu = fmax(iV[d] - r2, 0); mu <= fmin(iV[d] + r2, s.aMax - 1); mu++) {
-			for (std::vector<int> &sElem : se) {
-				std::vector<int> x(sElem);
+		std::vector<std::vector<count>> w;
+		for (count mu = std::max(iV[d] - r2, 0llu); mu <= std::min(iV[d] + r2, s.aMax - 1); mu++) {
+			for (std::vector<count> &sElem : se) {
+				std::vector<count> x(sElem);
 				x.push_back(mu);
 				w.push_back(x);
 			}
@@ -199,8 +204,8 @@ const std::vector<int> MocnikGenerator::boxVolume(MocnikGenerator::LayerState &s
 		se = w;
 	}
 	// convert the list of grid cells from a multi to a one-dimensional index
-	std::vector<int> seResult;
-	for (std::vector<int> &v : se) {
+	std::vector<count> seResult;
+	for (std::vector<count> &v : se) {
 		seResult.push_back(toIndex(s, v));
 	}
 	return seResult;
@@ -208,10 +213,10 @@ const std::vector<int> MocnikGenerator::boxVolume(MocnikGenerator::LayerState &s
 
 // EDGE GENERATION
 
-void MocnikGenerator::addEdgesToGraph(Graph &G, const count &n, const double &k, const double &relativeWeight, const bool &baseLayer) {
+void MocnikGenerator::addEdgesToGraph(Graph &G, const count n, const double k, const double relativeWeight, const bool baseLayer) {
 	// map vector containing the nodes resp. their positions
 	MocnikGenerator::LayerState s;
-	initCellArray(s, ceil(std::pow(n / 2, 1./dim) / k));
+	initCellArray(s, static_cast<count>(std::ceil(std::pow(n / 2, 1./dim) / k)));
 
 	// add the nodes to the layer state
 	for (count i = 0; i < n; i++) {
@@ -219,7 +224,7 @@ void MocnikGenerator::addEdgesToGraph(Graph &G, const count &n, const double &k,
 	}
 
 	// create the edges
-	count cellMax = std::pow(s.aMax, dim);
+	const auto cellMax = static_cast<count>(std::pow(s.aMax, dim));
 	std::vector<std::vector<std::tuple<node, node, double>>> edges(cellMax);
 	#pragma omp parallel for
 	for (omp_index cell = 0; cell < static_cast<omp_index>(cellMax); cell++) {
@@ -235,7 +240,7 @@ void MocnikGenerator::addEdgesToGraph(Graph &G, const count &n, const double &k,
 			distMins[i] = -1;
 		}
 		bool nodesFound = false;
-		int r = -1;
+		count r = -1;
 		while (!nodesFound || r < getMax(distMins).second * s.aMax) {
 			r++;
 			for (auto &x : boxSurface(s, cell, r)) {
