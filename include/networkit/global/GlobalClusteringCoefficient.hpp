@@ -17,7 +17,7 @@ namespace NetworKit {
 class GlobalClusteringCoefficient {
 
 public:  
-	virtual double approximate(const Graph& G, int k);
+	double approximate(const Graph& G, count k);
 };
 
 } /* namespace NetworKit */
