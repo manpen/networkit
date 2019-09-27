@@ -31,11 +31,11 @@ void PubWebGenerator::moveNodeIntoUnitSquare(float& x, float& y) {
 float PubWebGenerator::squaredDistanceInUnitTorus(float x1, float y1, float x2,
 		float y2) {
 	auto adjustForUnitTorus([&](float& z) {
-		if (z > 0.5) {
-			z = 1.0 - z;
+		if (z > 0.5f) {
+			z = 1.0f - z;
 		}
-		else if (z < -0.5) {
-			z = z + 1.0;
+		else if (z < -0.5f) {
+			z = z + 1.0f;
 		}
 	});
 
@@ -131,12 +131,12 @@ void PubWebGenerator::addNodesToArea(index area, count num, Graph& g) {
 
 	for (index j = 0; j < num; ++j) {
 		// compute random angle between [0, 2pi) and distance between [0, width/2]
-		float angle = Aux::Random::real() * 2.0 * PI;
-		float dist = Aux::Random::real() * denseAreaXYR[area].rad;
+		const auto angle = Aux::Random::realf() * 2.0 * PI;
+		const auto dist  = Aux::Random::realf() * denseAreaXYR[area].rad;
 
 		// compute coordinates and adjust them
-		float x = denseAreaXYR[area].x + cosf(angle) * dist;
-		float y = denseAreaXYR[area].y + sinf(angle) * dist;
+		float x = static_cast<float>(denseAreaXYR[area].x + std::cos(angle) * dist);
+		float y = static_cast<float>(denseAreaXYR[area].y + std::sin(angle) * dist);
 		moveNodeIntoUnitSquare(x, y);
 
 		// create vertex with these coordinates
@@ -148,8 +148,8 @@ void PubWebGenerator::fillDenseAreas(Graph& g) {
 
 	for (index area = 0; area < numDenseAreas; ++area) {
 		// choose center randomly, ensure complete cluster is within (0,1) without modifications
-		denseAreaXYR[area].x = Aux::Random::real();
-		denseAreaXYR[area].y = Aux::Random::real();
+		denseAreaXYR[area].x = Aux::Random::realf();
+		denseAreaXYR[area].y = Aux::Random::realf();
 		addNodesToArea(area, numPerArea[area], g);
 	}
 }
@@ -159,7 +159,7 @@ void PubWebGenerator::chooseDenseAreaSizes() {
 
 	for (index area = 0; area < numDenseAreas; ++area) {
 		// anti-quadratic probability distribution
-		float f = Aux::Random::real() * MIN_MAX_DENSE_AREA_FACTOR + 1.0f;
+		const float f = Aux::Random::realf() * MIN_MAX_DENSE_AREA_FACTOR + 1.0f;
 		denseAreaXYR[area].rad = (MAX_DENSE_AREA_RADIUS * f * f)
 				/ (MIN_MAX_DENSE_AREA_FACTOR * MIN_MAX_DENSE_AREA_FACTOR);
 	}
@@ -167,10 +167,9 @@ void PubWebGenerator::chooseDenseAreaSizes() {
 
 // randomly spread remaining vertices over whole area
 void PubWebGenerator::spreadRemainingNodes(Graph& g) {
-
 	while (g.numberOfNodes() < n) {
-		float x = Aux::Random::real();
-		float y = Aux::Random::real();
+		float x = Aux::Random::realf();
+		float y = Aux::Random::realf();
 		g.addNode(x, y);
 	}
 }
@@ -179,15 +178,14 @@ void PubWebGenerator::spreadRemainingNodes(Graph& g) {
 void PubWebGenerator::chooseClusterSizes() {
 	float f = 0.0;
 	for (index i = 0; i < numDenseAreas; ++i) {
-		f += pow(denseAreaXYR[i].rad, 1.5);
+		f += std::pow(denseAreaXYR[i].rad, 1.5f);
 	}
-	f = ((float) n * ((float) numDenseAreas / ((float) numDenseAreas + 2.0f)))
-			/ f;
-	// TODO: better formula?
+	
+    f = static_cast<float>(n * numDenseAreas / ((numDenseAreas + 2.0) * f));
 
 	numPerArea.resize(numDenseAreas);
 	for (index i = 0; i < numDenseAreas; ++i) {
-		numPerArea[i] = roundf(f * pow(denseAreaXYR[i].rad, 1.5));
+		numPerArea[i] = static_cast<node>(std::round(f * std::pow(denseAreaXYR[i].rad, 1.5)));
 	}
 }
 

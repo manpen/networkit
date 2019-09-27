@@ -84,7 +84,7 @@ uint64_t integer(uint64_t lowerBound, uint64_t upperBound) {
 }
 
 double real() {
-	thread_local static std::uniform_real_distribution<double> dist{};
+	std::uniform_real_distribution<double> dist{};
 	return dist(getURNG());
 }
 double real(double upperBound) {
@@ -95,6 +95,20 @@ double real(double lowerBound, double upperBound) {
 	std::uniform_real_distribution<double> dist{lowerBound, upperBound};
 	return dist(getURNG());
 }
+
+float realf() {
+    std::uniform_real_distribution<float> dist{};
+    return dist(getURNG());
+}
+float realf(float upperBound) {
+    std::uniform_real_distribution<float> dist{ 0.0, upperBound };
+    return dist(getURNG());
+}
+float realf(float lowerBound, float upperBound) {
+    std::uniform_real_distribution<float> dist{ lowerBound, upperBound };
+    return dist(getURNG());
+}
+
 
 double probability() {
 	thread_local static std::uniform_real_distribution<double> dist{0.0, std::nexttoward(1.0, 2.0)};

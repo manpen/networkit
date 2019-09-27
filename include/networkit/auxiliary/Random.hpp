@@ -75,6 +75,10 @@ double real();
 double real(double upperBound);
 double real(double lowerBound, double upperBound);
 
+float realf();
+float realf(float upperBound);
+float realf(float lowerBound, float upperBound);
+
 /**
  * @returns a double distributed uniformly in the range [0, 1]
  * @note this differs from real() in returning a value in a closed instead of a half-open range.
