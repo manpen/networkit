@@ -94,7 +94,7 @@ TEST_F(GeneratorsBenchmark, benchmarkHyperbolicGeneratorWithSortedNodes) {
     double t = 1.0;
     vector<double> angles(n);
     vector<double> radii(n);
-    double R = s*HyperbolicSpace::hyperbolicAreaToRadius(n);
+    double R = s*HyperbolicSpace::hyperbolicAreaToRadius(static_cast<double>(n));
     double r = HyperbolicSpace::hyperbolicRadiusToEuclidean(R);
     //sample points randomly
 
@@ -140,7 +140,7 @@ TEST_F(GeneratorsBenchmark, benchmarkDynamicHyperbolicGeneratorOnNodeMovement) {
 
 TEST_F(GeneratorsBenchmark, benchmarkParallelQuadtreeConstruction) {
     count n = 33554432;
-    Quadtree<index> quad(n,1.0);
+    Quadtree<index> quad(static_cast<double>(n), 1.0);
     EXPECT_EQ(quad.size(), n);
 }
 
@@ -149,7 +149,7 @@ TEST_F(GeneratorsBenchmark, benchmarkSequentialQuadtreeConstruction) {
     count capacity = 1000;
     double s =1;
     double alpha = 1;
-    double R = s*HyperbolicSpace::hyperbolicAreaToRadius(n);
+    double R = s*HyperbolicSpace::hyperbolicAreaToRadius(static_cast<double>(n));
     vector<double> angles(n);
     vector<double> radii(n);
     HyperbolicSpace::fillPoints(angles, radii, s, alpha);
@@ -163,13 +163,13 @@ TEST_F(GeneratorsBenchmark, benchmarkSequentialQuadtreeConstruction) {
 }
 
 TEST_F(GeneratorsBenchmark, benchmarkHyperbolicGeneratorMechanicGraphs) {
-    count n = 1000000;
-    double k = 6;
-    count m = n*k/2;
+    const count n = 1000000;
+    const double k = 6;
+    auto exp_m = n * k / 2.0;
     HyperbolicGenerator gen(n, k, 3, 0.14);
     gen.setLeafCapacity(10);
     Graph G = gen.generate();
-    EXPECT_NEAR(G.numberOfEdges(), m, m/10);
+    EXPECT_NEAR(static_cast<double>(G.numberOfEdges()), exp_m, exp_m / 10.0);
 }
 
 TEST_F(GeneratorsBenchmark, benchmarkChungLuGenerator) {
@@ -178,8 +178,7 @@ TEST_F(GeneratorsBenchmark, benchmarkChungLuGenerator) {
     std::vector<count> vec;
     /* Creates a random weight list */
     for (index i = 0; i < n; i++){
-        int grad = Aux::Random::integer(1, maxDegree);
-        vec.push_back(grad);
+        vec.push_back(Aux::Random::integer(1, maxDegree));
     }
     ChungLuGenerator generator(vec);
     Graph G = generator.generate();

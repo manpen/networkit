@@ -6,8 +6,11 @@
 */
 
 #ifdef NETWORKIT_WINDOWS
-#define NOMINMAX // windows.h by default defines the maros min/max, which prevent the usage of numeric_limits
-#include <windows.h>
+ #ifndef NOMINMAX
+ #define NOMINMAX // windows.h by default defines the maros min/max, which prevent the usage of numeric_limits
+ #endif
+
+ #include <windows.h>
 #else
 #include <stdlib.h>
 #endif

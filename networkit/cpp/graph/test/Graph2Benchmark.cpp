@@ -16,7 +16,7 @@ namespace NetworKit {
 class Graph2Benchmark: public testing::Test {};
 
 TEST_F(Graph2Benchmark, graphConstruction) {
-	count n = 1e+7;;
+	const auto n = static_cast<node>(1e+7);
 
 	Aux::Timer run;
 	INFO("[BEGIN] (n=" , n , ")");
@@ -30,10 +30,9 @@ TEST_F(Graph2Benchmark, graphConstruction) {
 
 
 TEST_F(Graph2Benchmark, nodeIteration) {
-	count n = 1e+7;;
-	Graph G(n);
-
-
+    const auto n = static_cast<node>(1e+7);
+    Graph G(n);
+    
 	std::vector<node> nodes(n, 0);
 
 	Aux::Timer run;
@@ -50,8 +49,8 @@ TEST_F(Graph2Benchmark, nodeIteration) {
 }
 
 TEST_F(Graph2Benchmark, parallelNodeIteration) {
-	count n = 1e+7;;
-	Graph G(n);
+    const auto n = static_cast<node>(1e+7);
+    Graph G(n);
 
 
 	std::vector<node> nodes(n, 0);
@@ -70,8 +69,8 @@ TEST_F(Graph2Benchmark, parallelNodeIteration) {
 
 
 TEST_F(Graph2Benchmark, nodePairIteration) {
-	count n = 1e+4;;
-	Graph G(n);
+    const auto n = static_cast<node>(1e+4);
+    Graph G(n);
 
 
 	Aux::Timer run;
@@ -91,9 +90,8 @@ TEST_F(Graph2Benchmark, nodePairIteration) {
 
 
 TEST_F(Graph2Benchmark, edgeInsertion) {
-
-	count n = 1e+4;
-	Graph G(n);
+    const auto n = static_cast<node>(1e+4);
+    Graph G(n);
 
 	Aux::Timer run;
 	INFO("[BEGIN] (n=" , n , ")");
@@ -111,8 +109,8 @@ TEST_F(Graph2Benchmark, edgeInsertion) {
 
 
 TEST_F(Graph2Benchmark, edgeRemoval) {
-	count n = 1e+4;
-	Graph G(n);
+    const auto n = static_cast<node>(1e+4);
+    Graph G(n);
 
 	// insert edges
 	G.forNodePairs([&](node u, node v){
@@ -135,8 +133,8 @@ TEST_F(Graph2Benchmark, edgeRemoval) {
 
 
 TEST_F(Graph2Benchmark, edgeIteration) {
-	count n = 1e+4;
-	Graph G(n);
+    const auto n = static_cast<node>(1e+4);
+    Graph G(n);
 
 	// insert edges
 	G.forNodePairs([&](node u, node v){
@@ -157,8 +155,8 @@ TEST_F(Graph2Benchmark, edgeIteration) {
 }
 
 TEST_F(Graph2Benchmark, parallelEdgeIteration) {
-	count n = 1e+4;
-	Graph G(n);
+    const auto n = static_cast<node>(1e+4);
+    Graph G(n);
 
 	// insert edges
 	G.forNodePairs([&](node u, node v){
@@ -181,8 +179,8 @@ TEST_F(Graph2Benchmark, parallelEdgeIteration) {
 }
 
 TEST_F(Graph2Benchmark, parallelSumForNodes) {
-	count n = 1e+7;
-	Graph G(n);
+    const auto n = static_cast<node>(1e+7);
+    Graph G(n);
 
 	double sum = G.parallelSumForNodes([&](node) {
 		return 1;
@@ -195,7 +193,7 @@ TEST_F(Graph2Benchmark, parallelSumForNodes) {
 
 
 TEST_F(Graph2Benchmark, nodeInsertion) {
-	count n = 1e+4;
+    const auto n = static_cast<node>(1e+4);
 
 	Graph G(0); // empty graph
 
@@ -208,7 +206,7 @@ TEST_F(Graph2Benchmark, nodeInsertion) {
 }
 
 TEST_F(Graph2Benchmark, nodeRemoval) {
-	count n = 1e+4;
+    const auto n = static_cast<node>(1e+4);
 
 	Graph G(n); // empty graph
 

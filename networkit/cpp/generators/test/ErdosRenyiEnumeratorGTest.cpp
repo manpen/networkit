@@ -77,7 +77,8 @@ static void testEre(const bool directed, const node n, const double prob) {
 		} else {
 			// count that we produced a number of edges, near the expected number
 			// we could apply much sharper bounds here if we allow for rare errors
-			ASSERT_NEAR(num_edges, ere.expectedNumberOfEdges(), 0.6 * ere.expectedNumberOfEdges());
+			ASSERT_NEAR(static_cast<double>(num_edges), static_cast<double>(ere.expectedNumberOfEdges()),
+                0.6 * ere.expectedNumberOfEdges());
 		}
 	}
 

@@ -68,7 +68,7 @@ TEST_F(APSPGTest, debugAPSP) {
 		node u = G.randomNode();
 		node v = G.randomNode();
 		if (u != v && !G.hasEdge(u, v)) {
-			G.addEdge(u, v, Aux::Random::integer(10));
+			G.addEdge(u, v, static_cast<edgeweight>(Aux::Random::integer(10)));
 		}
 	}
 	INFO("Nodes: ", G.numberOfNodes(), ", edges: ", G.numberOfEdges());

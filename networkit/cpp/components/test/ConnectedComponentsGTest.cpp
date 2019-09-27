@@ -255,6 +255,7 @@ TEST_F(ConnectedComponentsGTest, testDynConnectedComponentsTiny) {
 
 
 TEST_F(ConnectedComponentsGTest, testDynConnectedComponents) {
+    Aux::Random::setSeed(1, true);
     // construct graph
     METISGraphReader reader;
     Graph G = reader.read("input/PGPgiantcompo.graph");
@@ -270,13 +271,12 @@ TEST_F(ConnectedComponentsGTest, testDynConnectedComponents) {
 
     // Probability to perform an edge insertion or removal.
     float p = 0.5;
-    srand (time(NULL));
     for (int i = 0; i < numberOfTests; ++i) {
         node u = 0;
         node v = 1;
 
         // Perform edge insertion
-        if (((double) rand() / (RAND_MAX)) > p) {
+        if (Aux::Random::probability() > p) {
             while (G.hasEdge(u, v)) {
                 u = G.randomNode();
                 v = G.randomNode();
@@ -303,7 +303,7 @@ TEST_F(ConnectedComponentsGTest, testDynConnectedComponents) {
     for (int i = 0; i < numberOfTests; ++i) {
         node u = G.randomNode();
         node v = G.randomNode();
-        if (((double) rand() / (RAND_MAX)) > -1) {
+        if (Aux::Random::probability() > -1) {
             while (G.hasEdge(u, v)) {
                 u = G.randomNode();
                 v = G.randomNode();
@@ -445,6 +445,7 @@ TEST_F(ConnectedComponentsGTest, testDynWeaklyConnectedComponentsTiny) {
 
 
 TEST_F(ConnectedComponentsGTest, testDynWeaklyConnectedComponents) {
+    Aux::Random::setSeed(1, true);
     // Read graph
     KONECTGraphReader reader;
     Graph G = reader.read("input/foodweb-baydry.konect");
@@ -464,7 +465,7 @@ TEST_F(ConnectedComponentsGTest, testDynWeaklyConnectedComponents) {
         node u = 0;
         node v = 1;
         // Perform edge insertion
-        if (((double) rand() / (RAND_MAX)) > p) {
+        if (Aux::Random::probability() > p) {
             while (G.hasEdge(u, v)) {
                 u = G.randomNode();
                 v = G.randomNode();
@@ -490,7 +491,7 @@ TEST_F(ConnectedComponentsGTest, testDynWeaklyConnectedComponents) {
     for (int i = 0; i < numberOfTests; ++i) {
         node u = G.randomNode();
         node v = G.randomNode();
-        if (((double) rand() / (RAND_MAX)) > p) {
+        if (Aux::Random::probability() > p) {
             while (G.hasEdge(u, v) || u == v) {
                 u = G.randomNode();
                 v = G.randomNode();

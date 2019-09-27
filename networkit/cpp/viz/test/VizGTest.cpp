@@ -40,7 +40,9 @@ TEST_F(VizGTest, testPostscriptWriterOnRandomGraph) {
 
 	// create coordinates
 	G.forNodes([&](node u) {
-		Point<float> p(Aux::Random::probability(), Aux::Random::probability());
+		Point<float> p(
+            static_cast<float>(Aux::Random::probability()),
+            static_cast<float>(Aux::Random::probability()));
 		G.setCoordinate(u, p);
 	});
 

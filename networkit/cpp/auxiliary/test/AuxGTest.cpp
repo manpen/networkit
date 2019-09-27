@@ -99,8 +99,8 @@ TEST_F(AuxGTest, testRandomInteger) {
 	EXPECT_EQ(minR, l);
 	EXPECT_EQ(maxR, u);
 
-	double sum = std::accumulate(rVector.begin(), rVector.end(), uint64_t{0});
-	double avg = sum / n;
+	const auto sum = std::accumulate(rVector.begin(), rVector.end(), uint64_t{0});
+	const auto avg = static_cast<double>(sum) / n;
 
 
 	DEBUG("avg rand integer: ", avg);

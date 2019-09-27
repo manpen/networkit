@@ -1622,7 +1622,7 @@ TEST_F(CentralityGTest, testDynTopHarmonicClosenessUndirected) {
     auto refScores = reference.ranking();
 
     for (count j = 0; j < k; ++j) {
-        EXPECT_FLOAT_EQ(scores[j].second, refScores[j].second);
+        EXPECT_DOUBLE_EQ(scores[j].second, refScores[j].second);
     }
 
     count numInsertions = 1;
@@ -1667,7 +1667,7 @@ TEST_F(CentralityGTest, testDynTopHarmonicClosenessUndirected) {
         refScores = reference.ranking();
 
         for (count j = 0; j < k; ++j) {
-            EXPECT_FLOAT_EQ(scores[j].second, refScores[j].second);
+            EXPECT_DOUBLE_EQ(scores[j].second, refScores[j].second);
         }
     }
 
@@ -1684,7 +1684,7 @@ TEST_F(CentralityGTest, testDynTopHarmonicClosenessUndirected) {
         refScores = reference.ranking();
 
         for (count j = 0; j < k; ++j) {
-            EXPECT_FLOAT_EQ(scores[j].second, refScores[j].second);
+            EXPECT_DOUBLE_EQ(scores[j].second, refScores[j].second);
         }
     }
 
@@ -1699,7 +1699,7 @@ TEST_F(CentralityGTest, testDynTopHarmonicClosenessUndirected) {
     refScores = reference.ranking();
 
     for (count j = 0; j < k; ++j) {
-        EXPECT_FLOAT_EQ(scores[j].second, refScores[j].second);
+        EXPECT_DOUBLE_EQ(scores[j].second, refScores[j].second);
     }
 }
 
@@ -1717,7 +1717,7 @@ TEST_F(CentralityGTest, testDynTopHarmonicClosenessDirected) {
     auto scores = centrality.ranking();
     auto refScores = reference.ranking();
     for (count j = 0; j < k; ++j) {
-        EXPECT_FLOAT_EQ(scores[j].second, refScores[j].second);
+        EXPECT_DOUBLE_EQ(scores[j].second, refScores[j].second);
     }
 
     count numInsertions = 1;
@@ -1762,7 +1762,7 @@ TEST_F(CentralityGTest, testDynTopHarmonicClosenessDirected) {
         refScores = reference.ranking();
 
         for (count j = 0; j < k; ++j) {
-            EXPECT_FLOAT_EQ(scores[j].second, refScores[j].second);
+            EXPECT_DOUBLE_EQ(scores[j].second, refScores[j].second);
         }
     }
 
@@ -1780,7 +1780,7 @@ TEST_F(CentralityGTest, testDynTopHarmonicClosenessDirected) {
         refScores = reference.ranking();
 
         for (count j = 0; j < k; ++j) {
-            EXPECT_FLOAT_EQ(scores[j].second, refScores[j].second);
+            EXPECT_DOUBLE_EQ(scores[j].second, refScores[j].second);
         }
     }
 
@@ -1795,7 +1795,7 @@ TEST_F(CentralityGTest, testDynTopHarmonicClosenessDirected) {
     refScores = reference.ranking();
 
     for (count j = 0; j < k; ++j) {
-        EXPECT_FLOAT_EQ(scores[j].second, refScores[j].second);
+        EXPECT_DOUBLE_EQ(scores[j].second, refScores[j].second);
     }
 }
 } /* namespace NetworKit */

@@ -52,7 +52,6 @@ TEST_F(MaxentStressGTest, benchMaxentStressCoordinatesLAMG) {
 	for (const std::string& graphFile : graphFiles) {
 		Graph graph = reader.read(graphFile);
 
-		double runtime = 0;
 		double fullStress = 0;
 		double maxentStress = 0;
 		Aux::Random::setSeed(Aux::Random::integer(), false);
@@ -65,15 +64,13 @@ TEST_F(MaxentStressGTest, benchMaxentStressCoordinatesLAMG) {
 		maxentStressAlgo.run();
 		t.stop();
 
-		runtime = t.elapsedMicroseconds();
+		const auto runtime = 1e-3 * t.elapsedMicroseconds();
 		if (graph.numberOfNodes() < 1e5) {
 			maxentStressAlgo.scaleLayout();
 			fullStress = maxentStressAlgo.fullStressMeasure();
 			maxentStress = maxentStressAlgo.maxentMeasure();
 		}
 
-
-		runtime /= 1000;
 
 		INFO(graphFile, "\t", maxentStress, "\t", fullStress, "\t", runtime);
 	}
@@ -86,7 +83,6 @@ TEST_F(MaxentStressGTest, benchMaxentStressConjGradIdPrecAlgebraicDistance) {
     for (const std::string& graphFile : graphFiles) {
         Graph graph = reader.read(graphFile);
 
-        double runtime = 0;
         double fullStress = 0;
         double maxentStress = 0;
         Aux::Random::setSeed(Aux::Random::integer(), false);
@@ -97,17 +93,14 @@ TEST_F(MaxentStressGTest, benchMaxentStressConjGradIdPrecAlgebraicDistance) {
         maxentStressAlgo.run();
         t.stop();
 
-        runtime = t.elapsedMicroseconds();
+        const auto runtime = 1e-3 * t.elapsedMicroseconds();
         if (graph.numberOfNodes() < 1e5) {
             maxentStressAlgo.scaleLayout();
-            fullStress = maxentStressAlgo.fullStressMeasure();
+            fullStress   = maxentStressAlgo.fullStressMeasure();
             maxentStress = maxentStressAlgo.maxentMeasure();
         }
 
-
-        runtime /= 1000;
-
-    INFO(graphFile, "\t", maxentStress, "\t", fullStress, "\t", runtime);
+        INFO(graphFile, "\t", maxentStress, "\t", fullStress, "\t", runtime);
     }
 }
 
@@ -118,7 +111,6 @@ TEST_F(MaxentStressGTest, benchMaxentStressConjGradDiagPrecond) {
     for (const std::string& graphFile : graphFiles) {
         Graph graph = reader.read(graphFile);
 
-        double runtime = 0;
         double fullStress = 0;
         double maxentStress = 0;
         Aux::Random::setSeed(Aux::Random::integer(), false);
@@ -129,15 +121,13 @@ TEST_F(MaxentStressGTest, benchMaxentStressConjGradDiagPrecond) {
         maxentStressAlgo.run();
         t.stop();
 
-        runtime = t.elapsedMicroseconds();
+        const auto runtime = 1e-3 * t.elapsedMicroseconds();
         if (graph.numberOfNodes() < 1e5) {
             maxentStressAlgo.scaleLayout();
             fullStress = maxentStressAlgo.fullStressMeasure();
             maxentStress = maxentStressAlgo.maxentMeasure();
         }
 
-
-        runtime /= 1000;
 
         INFO(graphFile, "\t", maxentStress, "\t", fullStress, "\t", runtime);
     }
@@ -150,7 +140,6 @@ TEST_F(MaxentStressGTest, benchMaxentStressCoordConjGradIdPrecond) {
     for (const std::string& graphFile : graphFiles) {
         Graph graph = reader.read(graphFile);
 
-        double runtime = 0;
         double fullStress = 0;
         double maxentStress = 0;
         Aux::Random::setSeed(Aux::Random::integer(), false);
@@ -163,15 +152,13 @@ TEST_F(MaxentStressGTest, benchMaxentStressCoordConjGradIdPrecond) {
         maxentStressAlgo.run();
         t.stop();
 
-        runtime = t.elapsedMicroseconds();
+        const auto runtime = 1e-3 * t.elapsedMicroseconds();
         if (graph.numberOfNodes() < 1e5) {
             maxentStressAlgo.scaleLayout();
             fullStress = maxentStressAlgo.fullStressMeasure();
             maxentStress = maxentStressAlgo.maxentMeasure();
         }
 
-
-        runtime /= 1000;
 
         INFO(graphFile, "\t", maxentStress, "\t", fullStress, "\t", runtime);
     }

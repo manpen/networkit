@@ -1617,7 +1617,7 @@ TEST_P(GraphGTest, testForEdgesOf) {
 			EXPECT_TRUE(it != this->houseEdgesOut.end());
 
 			// find index in edge array
-			int i = std::distance(this->houseEdgesOut.begin(), it);
+			const auto i = std::distance(this->houseEdgesOut.begin(), it);
 			if (isDirected()) {
 				// make sure edge was not visited before (would be visited twice)
 				EXPECT_EQ(0, visited[i]);
@@ -1667,7 +1667,7 @@ TEST_P(GraphGTest, testForWeightedEdgesOf) {
 			EXPECT_TRUE(it != this->houseEdgesOut.end());
 
 			// find index in edge array
-			int i = std::distance(this->houseEdgesOut.begin(), it);
+			const auto i = std::distance(this->houseEdgesOut.begin(), it);
 			if (isDirected()) {
 				// make sure edge was not visited before (would be visited twice)
 				EXPECT_EQ(0, visited[i]);

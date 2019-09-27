@@ -39,11 +39,11 @@ void IOBenchmark::convertToHeatMap(std::vector<bool> &infected, std::vector<doub
 	//create data structures for heat map
 	double xspread = *minmaxx.second - *minmaxx.first;
 	double yspread = *minmaxy.second - *minmaxy.first;
-	int xsteps = xspread / resolution + 1;
-	int ysteps = yspread / resolution + 1;
+	const auto xsteps = static_cast<size_t>(xspread / resolution + 1);
+	const auto ysteps = static_cast<size_t>(yspread / resolution + 1);
 	std::vector<std::vector<int> > infectedByRegion(xsteps);
 	std::vector<std::vector<bool> > populated(xsteps);
-	for (int i = 0; i < xsteps; i++) {
+	for (size_t i = 0; i < xsteps; i++) {
 		infectedByRegion[i].resize(ysteps, 0);
 		populated[i].resize(ysteps, false);
 	}
@@ -51,8 +51,8 @@ void IOBenchmark::convertToHeatMap(std::vector<bool> &infected, std::vector<doub
 	//fill heat map
 	for (index i = 0; i < infected.size(); i++) {
 		//get bins
-		index xBin = (xcoords[i]-*minmaxx.first)/resolution;
-		index yBin = (ycoords[i]-*minmaxy.first)/resolution;
+		const auto xBin = static_cast<index>( (xcoords[i]-*minmaxx.first)/resolution );
+        const auto yBin = static_cast<index>( (ycoords[i]-*minmaxy.first)/resolution );
 
 		//check bins
 		assert(xBin < infectedByRegion.size());
@@ -153,7 +153,7 @@ TEST_F(IOBenchmark, benchRasterReader) {
 			INFO("Filled quadtree", runtime.elapsedTag());
 
 			uint64_t numQueries = 1000;
-			long treeTotalNeighbours = 0;
+			count treeTotalNeighbours = 0;
 
 			// perform range queries
 			runtime.start();
@@ -167,7 +167,7 @@ TEST_F(IOBenchmark, benchRasterReader) {
 			runtime.stop();
 			INFO("Completed ", numQueries, " quadtree queries with on average ", treeTotalNeighbours / numQueries, " neighbours", runtime.elapsedTag());
 
-			long naiveTotalNeighbours = 0;
+			count naiveTotalNeighbours = 0;
 			runtime.start();
 			for (uint64_t q = 0; q < numQueries; ++q) {
 				std::vector<index> result;
@@ -185,7 +185,7 @@ TEST_F(IOBenchmark, benchRasterReader) {
 			}
 			runtime.stop();
 			INFO("Completed ", numQueries, " naive queries with on average ", naiveTotalNeighbours / numQueries, " neighbours", runtime.elapsedTag());
-			EXPECT_NEAR(treeTotalNeighbours, naiveTotalNeighbours, treeTotalNeighbours / 10);
+			EXPECT_NEAR(static_cast<double>(treeTotalNeighbours), static_cast<double>(naiveTotalNeighbours), treeTotalNeighbours / 10.0);
 		}
 	}
 }

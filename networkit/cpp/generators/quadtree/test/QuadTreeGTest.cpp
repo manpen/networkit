@@ -130,15 +130,14 @@ TEST_F(QuadTreeGTest, testQuadTreeHyperbolicCircle) {
  */
 TEST_F(QuadTreeGTest, testQuadTreeThresholdGrowth) {
 	count n = 100;
-	double R = HyperbolicSpace::hyperbolicAreaToRadius(n);
+	double R = HyperbolicSpace::hyperbolicAreaToRadius(static_cast<double>(n));
 	double r = HyperbolicSpace::hyperbolicRadiusToEuclidean(R);
 	vector<double> angles(n);
 	vector<double> radii(n);
-	vector<double> indices(n);
+
 	HyperbolicSpace::fillPoints(angles, radii, R, 1);
 	double max = 0;
 	for (index i = 0; i < n; i++) {
-		indices[i] = i;
 		radii[i] = HyperbolicSpace::hyperbolicRadiusToEuclidean(radii[i]);
 		if (radii[i] == r) radii[i] = std::nextafter(radii[i], 0);
 		if (radii[i] > max) {
@@ -186,15 +185,15 @@ TEST_F(QuadTreeGTest, testQuadTreeThresholdGrowth) {
  * Insert nodes into Quadtree and successively delete all of them, check if resulting tree is empty
  */
 TEST_F(QuadTreeGTest, testQuadTreeDeletion) {
-	count n = 1000;
-	double R = HyperbolicSpace::hyperbolicAreaToRadius(n);
+	const node n = 1000;
+	double R = HyperbolicSpace::hyperbolicAreaToRadius(static_cast<double>(n));
 	double r = HyperbolicSpace::hyperbolicRadiusToEuclidean(R);
 	vector<double> angles(n);
 	vector<double> radii(n);
-	vector<double> indices(n);
+	vector<node>  indices(n);
 	HyperbolicSpace::fillPoints(angles, radii, R, 1);
 	double max = 0;
-	for (index i = 0; i < n; i++) {
+	for (node i = 0; i < n; i++) {
 		indices[i] = i;
 		radii[i] = HyperbolicSpace::hyperbolicRadiusToEuclidean(radii[i]);
 		if (radii[i] == r) radii[i] = std::nextafter(radii[i], 0);
@@ -215,7 +214,7 @@ TEST_F(QuadTreeGTest, testQuadTreeDeletion) {
 		quad.addContent(i, angles[i], radii[i]);
 	}
 
-	while(indices.size() > 0) {
+	while(indices.size() > 0u) {
 		//pick random point which is not yet deleted
 		index toRemove = Aux::Random::integer(indices.size());
 		if (toRemove == indices.size()) toRemove--;
@@ -351,7 +350,7 @@ TEST_F(QuadTreeGTest, testQuadTreeBalance) {
 	count n = 100000;
 	double s =1;
 	double alpha = 1;
-	double R = s*HyperbolicSpace::hyperbolicAreaToRadius(n);
+	double R = s*HyperbolicSpace::hyperbolicAreaToRadius(static_cast<double>(n));
 	double r = HyperbolicSpace::hyperbolicRadiusToEuclidean(R);
 	vector<double> angles(n);
 	vector<double> radii(n);
@@ -422,7 +421,7 @@ TEST_F(QuadTreeGTest, testSequentialQuadTreeConstruction) {
 	count n = 100000;
 	count capacity = 1000;
 	double alpha = 1;
-	double R = HyperbolicSpace::hyperbolicAreaToRadius(n);
+	double R = HyperbolicSpace::hyperbolicAreaToRadius(static_cast<double>(n));
 	double r = HyperbolicSpace::hyperbolicRadiusToEuclidean(R);
 	vector<double> angles(n);
 	vector<double> radii(n);
@@ -479,7 +478,7 @@ TEST_F(QuadTreeGTest, testProbabilisticQuery) {
 		auto edgeProb = [acc](double) -> double {return acc;};
 		vector<index> near;
 		quad.getElementsProbabilistically(HyperbolicSpace::polarToCartesian(angles[query], radii[query]), edgeProb, near);
-		EXPECT_NEAR(near.size(), acc*n, std::max(acc*n*0.25, 10.0));
+		EXPECT_NEAR(1.0*near.size(), acc*n, std::max(acc*n*0.25, 10.0));
 	}
 
 	//TODO: some test about appropriate subtrees and leaves
@@ -551,9 +550,9 @@ TEST_F(QuadTreeGTest, testLeftSuppression) {
 	 */
 	count n = 10000;
 	double k = 10;
-	count m = n*k/2;
-	double targetR = HyperbolicSpace::getTargetRadius(n, m);
-	double R = HyperbolicSpace::hyperbolicAreaToRadius(n);
+	const auto m = n * k / 2.0;
+	double targetR = HyperbolicSpace::getTargetRadius(static_cast<double>(n), m);
+	double R = HyperbolicSpace::hyperbolicAreaToRadius(static_cast<double>(n));
 	double r = HyperbolicSpace::hyperbolicRadiusToEuclidean(R);
 	double alpha = 1;
 
@@ -596,10 +595,10 @@ TEST_F(QuadTreeGTest, debugTreeExport) {
 	count n = 200;
 	count capacity = 40;
 	double k = 10;
-	count m = n*k/2;
-	double targetR = HyperbolicSpace::getTargetRadius(n, m);
+	const auto m = n * k / 2.0;
+	double targetR = HyperbolicSpace::getTargetRadius(static_cast<double>(n), m);
 
-	double R = HyperbolicSpace::hyperbolicAreaToRadius(n);
+	double R = HyperbolicSpace::hyperbolicAreaToRadius(static_cast<double>(n));
 	double r = HyperbolicSpace::hyperbolicRadiusToEuclidean(R);
 	double alpha = 0.7;
 
@@ -726,7 +725,7 @@ TEST_F(QuadTreeGTest, testPolarEuclidQuery) {
 		auto edgeProb = [acc](double) -> double {return acc;};
 		vector<index> near;
 		tree.getElementsProbabilistically(HyperbolicSpace::polarToCartesian(angles[query], radii[query]), edgeProb, near);
-		EXPECT_NEAR(near.size(), acc*n, std::max(acc*n*0.25, 10.0));
+		EXPECT_NEAR(1.0*near.size(), acc*n, std::max(acc*n*0.25, 10.0));
 	}
 
 	//TODO: some test about appropriate subtrees and leaves

@@ -160,7 +160,7 @@ TEST_F(GeneratorsGTest, testStaticPubWebGenerator) {
 	count n = 450;
 	count numCluster = 9;
 	count maxNumNeighbors = 36;
-	float rad = 0.075;
+	float rad = 0.075f;
 
 	PubWebGenerator gen(n, numCluster, rad, maxNumNeighbors);
 	Graph G = gen.generate();
@@ -201,7 +201,7 @@ TEST_F(GeneratorsGTest, testDynamicPubWebGenerator) {
 	count n = 200;
 	count numCluster = 10;
 	count maxNumNeighbors = 40;
-	float rad = 0.08;
+	float rad = 0.08f;
 
 	DynamicPubWebGenerator dynGen(n, numCluster, rad, maxNumNeighbors, false);
 	Graph G = dynGen.getGraph();
@@ -270,8 +270,8 @@ TEST_F(GeneratorsGTest, testDynamicHyperbolicGeneratorOnMovedNodes) {
 	//generate starting graph
 	Graph G = HyperbolicGenerator().generate(angles, radii, R);
 	count initialEdgeCount = G.numberOfEdges();
-	count expected = n*HyperbolicSpace::getExpectedDegree(n, alpha, R)*0.5;
-	EXPECT_NEAR(initialEdgeCount, expected, expected/5);
+	auto expected = n*HyperbolicSpace::getExpectedDegree(n, alpha, R) * 0.5;
+	EXPECT_NEAR(static_cast<double>(initialEdgeCount), expected, expected / 5.0);
 	GraphUpdater gu(G);
 	std::vector<GraphEvent> stream;
 
@@ -300,7 +300,7 @@ TEST_F(GeneratorsGTest, testDynamicHyperbolicGeneratorOnMovedNodes) {
 	EXPECT_EQ(G.numberOfEdges(), comparison.numberOfEdges());
 
 	//heuristic criterion: Number of edges may change, but should not change much
-	EXPECT_NEAR(G.numberOfEdges(), initialEdgeCount, initialEdgeCount/5);
+	EXPECT_NEAR(static_cast<double>(G.numberOfEdges()), static_cast<double>(initialEdgeCount), initialEdgeCount/5.0);
 }
 
 /**
@@ -310,11 +310,11 @@ TEST_F(GeneratorsGTest, testDynamicHyperbolicVisualization) {
 	count n = 300;
 	count nSteps = 20;
 
-	const double k = 6;
-	const double alpha = 1;
+	const double k = 6.0;
+	const double alpha = 1.0;
 	//const double exp = 2*alpha+1;
-	const double T = 0;
-	const double R = HyperbolicSpace::getTargetRadius(n, n*k/2, alpha, T);
+	const double T = 0.0;
+	const double R = HyperbolicSpace::getTargetRadius(static_cast<double>(n), n*k/2.0, alpha, T);
 
 	double movedShare = 0.2;
 	double moveDistance = 1;
@@ -494,7 +494,7 @@ TEST_F(GeneratorsGTest, testRmatGeneratorException) {
 
 TEST_F(GeneratorsGTest, testRmatGenerator) {
 	count scale = 9;
-	count n = (1 << scale);
+	count n = count(1) << scale;
 	count edgeFactor = 12;
 	double a = 0.51;
 	double b = 0.12;
@@ -553,8 +553,7 @@ TEST_F(GeneratorsGTest, testChungLuGeneratorDegreeConsistency) {
 	count maxDegree = n / 8;
 	/* Creates a random sequence of weights */
 	for (index i = 0; i < n; i++){
-		int grad = Aux::Random::integer(1, maxDegree);
-		vec.push_back(grad);
+		vec.push_back(Aux::Random::integer(1, maxDegree));
 	}
 	ChungLuGenerator generator(vec);
 	Graph G = generator.generate();
@@ -565,7 +564,7 @@ TEST_F(GeneratorsGTest, testChungLuGeneratorDegreeConsistency) {
 	/* Check if node degree is more than 50% off from the expected degree of that node. */
 	// TODO Should we be looking for something better than a 50% range here?
 	G.parallelForNodes([&] (node v) {
-		EXPECT_NEAR(G.degree(v), vec[v], (0.5 * maxDegree));
+		EXPECT_NEAR(static_cast<double>(G.degree(v)), static_cast<double>(vec[v]), 0.5 * maxDegree);
 	});
 }
 
@@ -576,15 +575,15 @@ TEST_F(GeneratorsGTest, testChungLuGeneratorVolumeConsistency) {
 	count expectedVolume = 0;
 	/* Creates a random sequence of weights */
 	for (index i = 0; i < n; i++){
-		int grad = Aux::Random::integer(1, maxDegree);
-		vec.push_back(grad);
-		expectedVolume += grad;
+		const auto deg = Aux::Random::integer(1, maxDegree);
+		vec.push_back(deg);
+		expectedVolume += deg;
 	}
 	ChungLuGenerator generator(vec);
 	Graph G = generator.generate();
 	/* Check if volume is more than 10% off from the expected volume. */
 	//TODO Is a 20% offset here sufficient? */
-	EXPECT_NEAR(G.numberOfEdges() * 2, expectedVolume, 0.2 * expectedVolume);
+	EXPECT_NEAR(2.0 * G.numberOfEdges(), 1.0 * expectedVolume, 0.2 * expectedVolume);
 }
 
 TEST_F(GeneratorsGTest, testHavelHakimiGeneratorOnRandomSequence) {
@@ -607,7 +606,7 @@ TEST_F(GeneratorsGTest, testHavelHakimiGeneratorOnRandomSequence) {
 		if (realizable) {
 			Graph G = hhgen.generate();
 			EXPECT_TRUE(G.checkConsistency());
-			count volume = std::accumulate(sequence.begin(), sequence.end(), 0);
+			count volume = std::accumulate(sequence.begin(), sequence.end(), 0llu);
 			EXPECT_EQ(volume, 2 * G.numberOfEdges());
 		}
 	} while (! realizable);
@@ -631,7 +630,7 @@ TEST_F(GeneratorsGTest, testHavelHakimiGeneratorOnRealSequence) {
 		Graph G2 = hhgen.generate();
 		EXPECT_TRUE(G.checkConsistency());
 
-		count volume = std::accumulate(sequence.begin(), sequence.end(), 0);
+		count volume = std::accumulate(sequence.begin(), sequence.end(), 0llu);
 		EXPECT_EQ(volume, 2 * G2.numberOfEdges());
 
 		if (volume < 50000) {
@@ -816,7 +815,7 @@ TEST_F(GeneratorsGTest, testHyperbolicPointGeneration) {
 	count n = 1000;
 	double stretch = Aux::Random::real(0.5,1.5);
 	double alpha = Aux::Random::real(0.5,1.5);
-	double R = HyperbolicSpace::hyperbolicAreaToRadius(n)*stretch;
+	double R = HyperbolicSpace::hyperbolicAreaToRadius(static_cast<double>(n))*stretch;
 	vector<double> angles(n, -1);
 	vector<double> radii(n, -1);
 	HyperbolicSpace::fillPoints(angles, radii, R, alpha);
@@ -834,13 +833,13 @@ TEST_F(GeneratorsGTest, testHyperbolicPointGeneration) {
 TEST_F(GeneratorsGTest, testHyperbolicGenerator) {
 	Aux::Random::setSeed(0, false);
 	count n = 5000;
-	double k = 16;
-	count m = k*n/2;
+	const double k = 16.0;
+	const auto exp_m = k*n/2;
 	HyperbolicGenerator gen(n,k,7);
 	Graph G = gen.generate();
 	EXPECT_EQ(G.numberOfNodes(), n);
 	EXPECT_TRUE(G.checkConsistency());
-	EXPECT_NEAR(G.numberOfEdges(), m, m/5);
+	EXPECT_NEAR(static_cast<double>(G.numberOfEdges()), exp_m, exp_m / 5.0);
 }
 
 /**
@@ -850,22 +849,22 @@ TEST_F(GeneratorsGTest, testHyperbolicGeneratorConsistency) {
 	Aux::Random::setSeed(0, false);
 	count n = 5000;
 	double k = 6;
-	count m = n*k/2;
-	HyperbolicGenerator gen(n, k);
+    const auto exp_m = k * n / 2;
+    HyperbolicGenerator gen(n, k);
 	Graph G = gen.generate();
-	EXPECT_NEAR(G.numberOfEdges(), m, m/5);
-	ASSERT_TRUE(G.checkConsistency());
+    EXPECT_NEAR(static_cast<double>(G.numberOfEdges()), exp_m, exp_m / 5.0);
+    ASSERT_TRUE(G.checkConsistency());
 }
 
 TEST_F(GeneratorsGTest, testHyperbolicGeneratorMechanicGraphs) {
 	Aux::Random::setSeed(0, false);
 	count n = 2000;
 	double k = 6;
-	count m = n*k/2;
-	HyperbolicGenerator gen(n, k, 3, 0.14);
+    const auto exp_m = k * n / 2;
+    HyperbolicGenerator gen(n, k, 3, 0.14);
 	Graph G = gen.generate();
-	EXPECT_NEAR(G.numberOfEdges(), m, m/10);
-	ASSERT_TRUE(G.checkConsistency());
+    EXPECT_NEAR(static_cast<double>(G.numberOfEdges()), exp_m, exp_m / 5.0);
+    ASSERT_TRUE(G.checkConsistency());
 }
 
 TEST_F(GeneratorsGTest, testConfigurationModelGeneratorOnRealSequence) {
@@ -885,7 +884,7 @@ TEST_F(GeneratorsGTest, testConfigurationModelGeneratorOnRealSequence) {
 		EdgeSwitchingMarkovChainGenerator gen(sequence, skipTest);
 		Graph G2 = gen.generate();
 
-		count volume = std::accumulate(sequence.begin(), sequence.end(), 0);
+		count volume = std::accumulate(sequence.begin(), sequence.end(), 0llu);
 		EXPECT_EQ(volume, 2 * G2.numberOfEdges());
 
 		if (volume < 50000) {
@@ -907,12 +906,12 @@ TEST_F(GeneratorsGTest, debugHyperbolicHighTemperatureGraphs) {
 	count n = 10000;
 	double k = 10;
 	double gamma = 3;
-	count m = n*k/2;
+	const auto exp_m = n * k / 2.0;
 	for (double T = 0; T < 10; T += 0.1) {
 		if (std::abs(T-1) < 0.00001) continue;
 		HyperbolicGenerator gen(n, k, gamma, T);
 		Graph G = gen.generate();
-		EXPECT_NEAR(G.numberOfEdges(), m, m/10);
+		EXPECT_NEAR(static_cast<double>(G.numberOfEdges()), exp_m, exp_m / 10.);
 	}
 }
 
@@ -921,11 +920,10 @@ TEST_F(GeneratorsGTest, debugGiganticCollectionOfHyperbolicTemperatureGraphs) {
 		count n = 10000;
 		double k = 10;
 		double T = 0.1;
-		count m = n*k/2;
+		const auto exp_m = n * k / 2.0;
 		HyperbolicGenerator gen(n, k, 3, T);
 		Graph G = gen.generate();
-		EXPECT_NEAR(G.numberOfEdges(), m, m/10);
-		//EXPECT_TRUE(G.checkConsistency());
+		EXPECT_NEAR(static_cast<double>(G.numberOfEdges()), exp_m, exp_m / 10.0);
 	}
 }
 
@@ -933,12 +931,12 @@ TEST_F(GeneratorsGTest, debugGiganticCollectionOfHyperbolicUnitDiskGraphs) {
 	count n = 1000000;
 	double k = 1;
 	for (index i = 0; i < 7; i++) {
-		count m = n*k/2;
+		const auto exp_m = n * k / 2.0;
 		HyperbolicGenerator gen(n, k, 7);
 		Graph G = gen.generate();
-		EXPECT_NEAR(G.numberOfEdges(), m, m/5);
+		EXPECT_NEAR(static_cast<double>(G.numberOfEdges()), exp_m, exp_m / 5.0);
 		EXPECT_TRUE(G.checkConsistency());
-		k *= 2;
+		k *= 2.0;
 	}
 }
 

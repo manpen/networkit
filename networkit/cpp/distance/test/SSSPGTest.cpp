@@ -65,7 +65,7 @@ TEST_F(SSSPGTest, testShortestPaths) {
 			x = n;
 		}
 	});
-	count dist = bfs.distance(x);
+	const auto dist = static_cast<count>(bfs.distance(x));
 	std::set<std::vector<node>> paths = bfs.getPaths(x, true);
 	count i = 0;
 	for (auto path : paths) {

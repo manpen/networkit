@@ -74,7 +74,7 @@ TEST(OctreeGTest, testOctreeWithExample) {
 			sum += point.first;
 		}
 
-		EXPECT_NEAR(sum, 10.5, 0.5);
+		EXPECT_NEAR(static_cast<double>(sum), 10.5, 0.5);
 	}
 
 	std::vector<std::pair<count, Point<double>>> exactApprox = ocTree.approximateDistance(Point<double>(2.0, 22.0), 0.0);

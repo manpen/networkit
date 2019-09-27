@@ -880,7 +880,7 @@ TEST_F(IOGTest, testNetworkitBinarySignedWeights) {
 	int64_t weight = -1;
 	for(count n = 0; n < G.numberOfNodes(); n++) {
 		if(n != G.numberOfNodes()-1)
-			G.addEdge(n, n+1, weight++);
+			G.addEdge(n, n+1, static_cast<edgeweight>(weight++));
 	}
 	NetworkitBinaryWriter writer(32, NetworkitBinaryWeights::autoDetect);
 	writer.write(G, "output/binarySigned");
