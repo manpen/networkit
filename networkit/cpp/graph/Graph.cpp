@@ -983,16 +983,15 @@ std::pair<node, node> Graph::randomEdge(bool uniformDistribution) const {
 std::vector<std::pair<node, node>> Graph::randomEdges(count nr) const {
 	if (numberOfEdges() == 0) {
 		throw std::runtime_error(
-		    "Graph has no edges to sample from. Add edges to the graph first.");
+			"Graph has no edges to sample from. Add edges to the graph first.");
 	}
 	std::vector<std::pair<node, node>> edges;
 
+	// create a discrete distribution over the range [0, n) where prob(i) is proportional to degreeOut(i)
+	std::discrete_distribution<node> distribution(n, 0.0, static_cast<double>(n), 
+		[&](double dnode) {return static_cast<double>(degreeOut(static_cast<node>(dnode))); });
+		
 	auto& gen = Aux::Random::getURNG();
-	std::vector<count> outDeg(upperNodeIdBound());
-	for (count i = 0; i < upperNodeIdBound(); ++i) {
-		outDeg[i] = outEdges[i].size();
-	}
-	std::discrete_distribution<count> distribution(outDeg.begin(), outDeg.end());
 
 	for (index i = 0; i < nr; i++) {
 		node u, v; // we will pick edge (u, v)
@@ -1011,8 +1010,10 @@ std::vector<std::pair<node, node>> Graph::randomEdges(count nr) const {
 				// edges should have probability 0
 				assert(outEdges[u].size() > 0);
 				v = randomNeighbor(u);
-			} while (u > v);
+			} while (u > v && storedNumberOfSelfLoops > 0);
 		}
+		if (u < v) 
+			std::swap(u, v);
 		edges.push_back({u, v});
 	}
 
