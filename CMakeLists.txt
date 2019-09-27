@@ -15,6 +15,7 @@ option(NETWORKIT_NATIVE "Optimize for native architecture (often better performa
 option(NETWORKIT_WARNINGS "Issue more warnings" OFF)
 option(NETWORKIT_FLATINSTALL "Install into a flat directory structure (useful when building a Python package)" OFF)
 option(NETWORKIT_COVERAGE "Build with support for coverage" OFF)
+option(NETWORKIT_COMPILE_HEADERS "Test header files for self-sufficiency: try to compile them." OFF)
 set(NETWORKIT_PYTHON "" CACHE STRING "Directory containing Python.h. Implies MONOLITH=TRUE")
 set(NETWORKIT_PYTHON_SOABI "" CACHE STRING "Platform specific file extension. Implies MONOLITH=TRUE")
 set(NETWORKIT_WITH_SANITIZERS "" CACHE STRING "Uses sanitizers during the compilation")
@@ -513,6 +514,42 @@ function(networkit_add_gbenchmark MOD NAME)
 		endif()
 	endif()
 endfunction(networkit_add_gbenchmark)
+
+################################################################################
+# Compile Headers
+if(NETWORKIT_COMPILE_HEADERS)
+
+	file(MAKE_DIRECTORY "${PROJECT_BINARY_DIR}/compile_header")
+
+	file(GLOB_RECURSE networkit_header_files
+			RELATIVE "${PROJECT_SOURCE_DIR}/include/networkit" FOLLOW_SYMLINKS "*.hpp")
+
+	list(FILTER networkit_header_files EXCLUDE REGEX "^\.\./")
+	list(FILTER networkit_header_files EXCLUDE REGEX "^ext")
+
+	foreach(header_file ${networkit_header_files})
+		# replace / and . with _ to get a valid target and file name
+		string(REPLACE "/" "_" compile_name "${header_file}")
+		string(REPLACE "." "_" compile_name "${compile_name}")
+
+		set(target_name "networkit_header_${compile_name}")
+		set(source_name "${PROJECT_BINARY_DIR}/compile_header/${target_name}.cpp")
+
+		file(WRITE ${source_name}
+				"#include <networkit/${header_file}>
+       int main() { return 0; }")
+
+		add_executable(${target_name} ${source_name})
+		target_link_libraries(${target_name} PRIVATE networkit OpenMP::OpenMP_CXX)
+		set_target_properties(${target_name} PROPERTIES
+				CXX_STANDARD ${NETWORKIT_CXX_STANDARD}
+				COMPILE_FLAGS "${NETWORKIT_CXX_FLAGS}"
+				LINK_FLAGS "${NETWORKIT_LINK_FLAGS}"
+				RUNTIME_OUTPUT_DIRECTORY "compiler_header/")
+
+	endforeach()
+
+endif(NETWORKIT_COMPILE_HEADERS)
 
 ################################################################################
 # Documentation
