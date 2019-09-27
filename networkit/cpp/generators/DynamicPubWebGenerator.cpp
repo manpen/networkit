@@ -86,9 +86,9 @@ std::vector<GraphEvent> DynamicPubWebGenerator::generate(count nSteps) {
 			if (clusterToIns < initGen.numDenseAreas) {
 				// real cluster, FIXME: DRY!
 				// compute random angle between [0, 2pi) and distance between [0, width/2]
-				float angle = Aux::Random::real() * 2.0 * PI;
-				float dist = Aux::Random::real()
-						* initGen.denseAreaXYR[clusterToIns].rad;
+				auto angle = static_cast<float>(Aux::Random::real() * 2.0 * PI);
+				auto dist = static_cast<float>(Aux::Random::real()
+						* initGen.denseAreaXYR[clusterToIns].rad);
 
 				// compute coordinates and adjust them
 				x = initGen.denseAreaXYR[clusterToIns].x
@@ -98,8 +98,8 @@ std::vector<GraphEvent> DynamicPubWebGenerator::generate(count nSteps) {
 				initGen.moveNodeIntoUnitSquare(x, y);
 			} else {
 				// noise -> random coordinate
-				x = Aux::Random::probability();
-				y = Aux::Random::probability();
+				x = static_cast<float>(Aux::Random::probability());
+				y = static_cast<float>(Aux::Random::probability());
 //				DEBUG("completely random placement");
 			}
 
@@ -126,15 +126,15 @@ std::vector<GraphEvent> DynamicPubWebGenerator::generate(count nSteps) {
 		// FIXME: get rid of quadratic running time!
 		G.forNodes([&](node u) {
 			std::priority_queue<std::pair<distance, edge> > pq;
-			Point<float> p1 = G.getCoordinate(u);
-			float& x1 = p1[0];
-			float& y1 = p1[1];
+			const Point<float> p1 = G.getCoordinate(u);
+			const float x1 = p1[0];
+			const float y1 = p1[1];
 
 			// fill PQ with neighbors in range
 			G.forNodes([&](node v) {
-				Point<float> p2 = G.getCoordinate(v);
-				float& x2 = p2[0];
-				float& y2 = p2[1];
+				const Point<float> p2 = G.getCoordinate(v);
+				const float x2 = p2[0];
+				const float y2 = p2[1];
 				float sqrDist = initGen.squaredDistanceInUnitTorus(x1, y1, x2, y2);
 
 				if (isInRange(sqrDist)) {

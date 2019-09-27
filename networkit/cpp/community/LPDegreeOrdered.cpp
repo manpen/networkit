@@ -16,8 +16,7 @@ namespace NetworKit {
 LPDegreeOrdered::LPDegreeOrdered(const Graph& G) : CommunityDetectionAlgorithm(G) {}
 
 void LPDegreeOrdered::run() {
-	count n = G.numberOfNodes();
-	count theta = n / 1e5;
+	const auto theta = static_cast<count>(G.numberOfNodes() / 1e5);
 	DEBUG("theta: " , theta);
 
 	index z = G.upperNodeIdBound();
@@ -29,7 +28,7 @@ void LPDegreeOrdered::run() {
 	std::vector<int> active(z + 1, 1); // not a boolean vector because there might be problems with parallel access
 
 	count nUpdated; // number of nodes which have been updated in last iteration
-	nUpdated = n; // all nodes have new labels -> first loop iteration runs
+	nUpdated = G.numberOfNodes(); // all nodes have new labels -> first loop iteration runs
 	nIterations = 0; // number of iterations
 
 	auto propagateLabels = [&](node v){

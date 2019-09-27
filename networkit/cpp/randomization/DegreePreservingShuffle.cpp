@@ -58,7 +58,7 @@ static std::vector<index> computePermutation(std::vector<NodeDegree<DegreeT>>& n
 
     // Now shuffle each group
     count numChanges = 0;
-    const auto numThreadsToRequest = std::max(1, std::min<int>(omp_get_max_threads(), n / 50000));
+    const auto numThreadsToRequest = std::max(1, std::min(omp_get_max_threads(), static_cast<int>(n / 50000)));
     #pragma omp parallel num_threads(numThreadsToRequest) reduction(+: numChanges)
     {
         const auto tid = omp_get_thread_num();

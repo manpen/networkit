@@ -127,16 +127,15 @@ void Betweenness::run() {
 }
 
 double Betweenness::maximum(){
-	if (normalized) {
+	if (normalized)
 		return 1;
-	}
-	double score;
-	count n = G.numberOfNodes();
-	if (G.isDirected()) {
-		score = (n-1)*(n-2);
-	} else {
-		score = (n-1)*(n-2)/2;
-	}
+
+	auto n = G.numberOfNodes();
+    auto score = static_cast<double>((n - 1)*(n - 2));
+
+	if (!G.isDirected()) 
+		score /= 2;
+	
 	return score;
 }
 

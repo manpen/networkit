@@ -134,7 +134,7 @@ void SolverLamg<Matrix>::solveCycle(Vector& x, const Vector& b, int finest, LAMG
 	rHistory = std::vector<std::vector<Vector>>(hierarchy.size());
 	latestIterate = std::vector<index>(hierarchy.size(), 0);
 	numActiveIterates = std::vector<count>(hierarchy.size(), 0);
-	int coarsest = hierarchy.size() - 1;
+	const auto coarsest = hierarchy.size() - 1;
 	std::vector<count> numVisits(coarsest);
 	std::vector<Vector> X(hierarchy.size());
 	std::vector<Vector> B(hierarchy.size());

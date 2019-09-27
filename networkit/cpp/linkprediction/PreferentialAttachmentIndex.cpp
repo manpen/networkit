@@ -10,7 +10,7 @@
 namespace NetworKit {
 
 double PreferentialAttachmentIndex::runImpl(node u, node v) {
-  return G->degree(u) * G->degree(v);
+  return static_cast<double>(G->degree(u)) * G->degree(v);
 }
 
 } // namespace NetworKit

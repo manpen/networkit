@@ -15,6 +15,8 @@
 #include <omp.h>
 #include <map>
 
+#include <algorithm>
+
 namespace NetworKit {
 
 HopPlotApproximation::HopPlotApproximation(const Graph& G, const count maxDistance, const count k, const count r): Algorithm(), G(G), maxDistance(maxDistance), k(k), r(r) {
@@ -59,7 +61,7 @@ void HopPlotApproximation::run() {
 		// set one bit in each bitmask with probability P(bit i=1) = 0.5^(i+1), i=0,..
 		for (count j = 0; j < k; j++) {
 			random = Aux::Random::real(0,1);
-			position = ceil(log(random)/log(0.5) - 1);
+			position = static_cast<count>(std::ceil(std::log(random)/std::log(0.5) - 1.0));
 			// set the bit in the bitmask
 			if (position < lengthOfBitmask+r) {
 				mPrev[v][j] |= 1 << position;
@@ -69,7 +71,7 @@ void HopPlotApproximation::run() {
 		}
 	});
 	// at zero distance, all nodes can only reach themselves
-	hopPlot[0] = 1/G.numberOfNodes();
+	hopPlot[0] = 1/G.numberOfNodes(); // FIXME: This probabily was supposed to be 1.0 / G.numberOfNodes(); as is, it's either 0, 1 or undefined behaivor
 	// as long as we need to connect more nodes
 	while (!activeNodes.empty() && (maxDistance <= 0 || h < maxDistance)) {
 		totalConnectedNodes = 0;
@@ -103,9 +105,7 @@ void HopPlotApproximation::run() {
 			estimatedConnectedNodes = (pow(2,b) / 0.77351);
 
 			// enforce monotonicity
-			if (estimatedConnectedNodes > G.numberOfNodes()) {
-				estimatedConnectedNodes = G.numberOfNodes();
-			}
+            estimatedConnectedNodes = std::max(estimatedConnectedNodes, static_cast<double>(G.numberOfNodes()));
 
 			// check whether all k bitmask for this node have reached the highest possible value
 			bool nodeFinished = true;

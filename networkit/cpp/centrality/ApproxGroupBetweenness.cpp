@@ -38,9 +38,9 @@ void ApproxGroupBetweenness::run() {
 	std::vector<int64_t> bucketInitializer(n);
 	std::vector<std::vector<node>> incidencyList(n);
 	std::vector<count> hyperEdges;
-	count samples = groupSize * log(n) / (epsilon * epsilon);
+	const auto samples = static_cast<count>(groupSize * log(n) / (epsilon * epsilon));
 	std::vector<std::vector<count>> hyperEdgesPerSample(samples);
-	Aux::BucketPQ nodeDegrees(bucketInitializer, -samples, 1);
+	Aux::BucketPQ nodeDegrees(bucketInitializer, -static_cast<int64_t>(samples), 1);
 
 	hasSortedGroup = false;
 

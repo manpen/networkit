@@ -29,7 +29,8 @@ void RandomNodeEdgeScore::run() {
 
 			while (!edgeFound) {
 				if (uniformlyRandomEdges.empty()) {
-					uniformlyRandomEdges = sparseGraph.randomEdges(sparseGraph.numberOfEdges() * (1.0 - rneRatio) + 20);
+					uniformlyRandomEdges = sparseGraph.randomEdges(static_cast<count>(
+                        sparseGraph.numberOfEdges() * (1.0 - rneRatio) + 20));
 				}
 
 				auto edge = uniformlyRandomEdges.back();

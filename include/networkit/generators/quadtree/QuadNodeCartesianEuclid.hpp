@@ -91,7 +91,7 @@ public:
 				assert(middle[d] >= minPoint[d]);
 			}
 		}
-		count childCount = pow(2,dimension);
+		const auto childCount = index(1) << dimension;
 		for (index i = 0; i < childCount; i++) {
 			vector<double> lowerValues(dimension);
 			vector<double> upperValues(dimension);
@@ -371,7 +371,7 @@ public:
 		if (probdenom == 0) return 0;//there is a very small probability, but we cannot process it.
 		TRACE("probUB: ", probUB, ", probdenom: ", probdenom);
 
-		count expectedNeighbours = probUB*size();
+		const auto expectedNeighbours = static_cast<count>(probUB*size());
 		count candidatesTested = 0;
 		count incomingNeighbours = result.size();
 		count ownsize = size();
@@ -383,10 +383,9 @@ public:
 			for (index i = 0; i < lsize; i++) {
 				//jump!
 				if (probUB < 1) {
-					double random = Aux::Random::real();
-					double delta = std::log(random) / probdenom;
+					double delta = std::log(Aux::Random::real()) / probdenom;
 					assert(delta >= 0);
-					i += delta;
+					i += static_cast<index>(delta);
 					if (i >= lsize) break;
 					TRACE("Jumped with delta ", delta, " arrived at ", i);
 				}
@@ -416,7 +415,7 @@ public:
 				for (index i = 0; i < stsize; i++) {
 					double delta = std::log(Aux::Random::real()) / probdenom;
 					assert(delta >= 0);
-					i += delta;
+					i += static_cast<index>(delta);
 					TRACE("Jumped with delta ", delta, " arrived at ", i, ". Calling maybeGetKthElement.");
 					if (i < size()) maybeGetKthElement(probUB, euQuery, prob, i, result);//this could be optimized. As of now, the offset is subtracted separately for each point
 					else break;

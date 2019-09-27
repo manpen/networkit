@@ -66,7 +66,7 @@ public:
 
 private:
     std::unique_ptr<CurveballDetails::GlobalCurveballImpl> impl;
-    unsigned numGlobalTrades;
+    count numGlobalTrades;
     bool degreePreservingShuffle;
 
 };

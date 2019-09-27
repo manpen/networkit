@@ -63,7 +63,7 @@ public:
 		this->lower = Point<double>(lowerValue);
 		this->upper = Point<double>(upperValue);
 
-		root = QuadNodeCartesianEuclid<T>(lower, upper, capacity, theoreticalSplit);
+		root = QuadNodeCartesianEuclid<T>(lower, upper, static_cast<unsigned>(capacity), theoreticalSplit);
 		for (index i = 0; i < n; i++) {
 			assert(content[i] < n);
 			root.addContent(content[i], positions[i]);

@@ -26,10 +26,9 @@ void PivotMDS::run() {
     std::vector<node> pivots = computePivots();
 
     std::vector<Triplet> triplets;
-    for (index j = 0; j < numPivots;
-         ++j) { // compute distances from pivots to other nodes
+    for (index j = 0; j < numPivots; ++j) { // compute distances from pivots to other nodes
         Aux::PrioQueue<edgeweight, node> PQ(n);
-        std::vector<edgeweight> dist(n, none);
+        std::vector<edgeweight> dist(n, std::numeric_limits<edgeweight>::max());
 
         dist[pivots[j]] = 0;
         PQ.insert(0, pivots[j]);

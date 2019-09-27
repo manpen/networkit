@@ -796,7 +796,7 @@ void Graph::removeEdge(node u, node v) {
 
 void Graph::removeAllEdges() {
 #pragma omp parallel for
-	for (omp_index u = 0; u < z; ++u) {
+	for (omp_index u = 0; u < static_cast<omp_index>(z); ++u) {
 		outEdges[u].clear();
 		if (isWeighted()) {
 			outEdgeWeights[u].clear();

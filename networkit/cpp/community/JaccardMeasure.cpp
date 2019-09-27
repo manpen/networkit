@@ -55,8 +55,8 @@ double JaccardMeasure::getDissimilarity(const Graph& G, const Partition& zeta,
 	count s00 = n * (n-1) / 2 + sumIntersection - (sumZeta + sumEta); // number of node pairs for which clusterings disagree
 
 	double jaccard;
-	double divisor = n * (n - 1) - 2 * s00;
-	if (divisor > 0) {
+	const auto divisor = static_cast<double>(n * (n - 1) - 2 * s00);
+	if (divisor > 0.0) {
 		jaccard = 1 - ((2 * s11) / divisor);
 	} else {
 		jaccard = 0;

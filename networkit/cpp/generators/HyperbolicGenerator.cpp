@@ -49,7 +49,7 @@ HyperbolicGenerator::HyperbolicGenerator(count n, double avgDegree, double plexp
 		alpha = 0.5*(plexp-1)/T;
 	}
 
-	R = HyperbolicSpace::getTargetRadius(n, n*avgDegree/2, alpha, T);
+	R = HyperbolicSpace::getTargetRadius(static_cast<double>(n), n*avgDegree/2, alpha, T);
 	temperature=T;
 	initialize();
 }
@@ -121,7 +121,7 @@ Graph HyperbolicGenerator::generateCold(const vector<double> &angles, const vect
 	#pragma omp parallel for
 	for (omp_index j = 0; j < static_cast<omp_index>(bands.size()); j++){
 		for (index i = 0; i < n; i++){
-			double alias = permutation[i];
+			const auto alias = permutation[i];
 			if (radii[alias] >= bandRadii[j] && radii[alias] <= bandRadii[j+1]){
 				bands[j].push_back(Point2D<double>(angles[alias], radii[alias], alias));
 			}
@@ -165,9 +165,9 @@ Graph HyperbolicGenerator::generateCold(const vector<double> &angles, const vect
 		for (omp_index i = 0; i < static_cast<omp_index>(n); i++) {
 			const double coshr = cosh(radii[i]);
 			const double sinhr = sinh(radii[i]);
-			count expectedDegree = (4/PI)*n*exp(-(radii[i])/2);
+			const auto expectedDegree = static_cast<count>( (4/PI) * n * exp(-(radii[i])/2));
 			vector<index> near;
-			near.reserve(expectedDegree*1.1);
+			near.reserve(static_cast<size_t>(expectedDegree*1.1));
 			Point2D<double> pointV(angles[i], radii[i], i);
 			for(index j = 0; j < bandCount; j++){
 				if(directSwap || bandRadii[j+1] > radii[i]){
@@ -254,7 +254,7 @@ Graph HyperbolicGenerator::generate(const vector<double> &angles, const vector<d
 		totalCandidates += quad.getElementsProbabilistically(HyperbolicSpace::polarToCartesian(angles[i], radii[i]), edgeProb, anglesSorted, near);
 		for (index j : near) {
 			if (j >= n) ERROR("Node ", j, " prospective neighbour of ", i, " does not actually exist. Oops.");
-			if (j > i) {
+			if (j > static_cast<index>(i)) {
 				result.addHalfEdge(i, j);
 			}
 		}

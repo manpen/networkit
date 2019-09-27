@@ -21,7 +21,7 @@ void NetworKit::StablePartitionNodes::run() {
 	// first determine which nodes are stable
 	G.balancedParallelForNodes([&](node u) {
 		if (G.degree(u) > 0) { // we consider isolated nodes to be stable.
-			std::map<index, count> labelWeights;
+			std::map<index, count> labelWeights; // FIXME: This should be map<index, edgeweight>?
 			G.forNeighborsOf(u, [&](node v, edgeweight ew) {
 				labelWeights[P[v]] += ew;
 			});

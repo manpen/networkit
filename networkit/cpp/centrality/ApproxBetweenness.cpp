@@ -32,11 +32,9 @@ void ApproxBetweenness::run() {
 	scoreData.clear();
 	scoreData.resize(G.upperNodeIdBound());
 
-	edgeweight vd = 0;
-
 	Diameter diam(G, DiameterAlgo::estimatedPedantic);
 	diam.run();
-	vd = diam.getDiameter().first;
+	const auto vd = static_cast<edgeweight>(diam.getDiameter().first);
 
 	if (vd <= 2) {
 		hasRun = true;
@@ -44,7 +42,7 @@ void ApproxBetweenness::run() {
 	}
 
 	INFO("estimated diameter: ", vd);
-	r = ceil((universalConstant / (epsilon * epsilon)) * (floor(log2(vd - 2)) + 1 - log(delta)));
+	r = static_cast<count>(ceil((universalConstant / (epsilon * epsilon)) * (floor(log2(vd - 2)) + 1 - log(delta))));
 
 	INFO("taking ", r, " path samples");
 	// parallelization:

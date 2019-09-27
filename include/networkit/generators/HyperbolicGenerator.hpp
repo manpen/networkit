@@ -72,7 +72,7 @@ public:
 	vector<double> getElapsedMilliseconds() const {
 		vector<double> result(threadtimers.size());
 		for (index i = 0; i < result.size(); i++) {
-			result[i] = threadtimers[i].elapsedMilliseconds();
+			result[i] = static_cast<double>(threadtimers[i].elapsedMilliseconds());
 		}
 		return result;
 	}
@@ -99,7 +99,7 @@ private:
 		return bandAngles;
 	}
 
-	static vector<double> getBandRadii(int n, double R, double seriesRatio = 0.9) {
+	static vector<double> getBandRadii(node n, double R, double seriesRatio = 0.9) {
 		/*
 		* We assume band differences form a geometric series.
 		* Thus, there is a constant ratio(r) between band length differences

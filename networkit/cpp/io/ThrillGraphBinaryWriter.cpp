@@ -25,7 +25,7 @@ void ThrillGraphBinaryWriter::write(const Graph &G, const std::string &path) {
 		if (G.hasNode(u)) {
 			G.forEdgesOf(u, [&](node v) {
 						if (u <= v) {
-							neighbors.push_back(v);
+							neighbors.push_back(static_cast<uint32_t>(v));
 						}
 					});
 		}

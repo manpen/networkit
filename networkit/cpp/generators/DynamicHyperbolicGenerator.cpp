@@ -22,7 +22,7 @@ DynamicHyperbolicGenerator::DynamicHyperbolicGenerator(count n, double avgDegree
 	this->moveEachStep = moveEachStep;
 	this->moveDistance = moveDistance;
 	this->initialized = false;
-	R = HyperbolicSpace::getTargetRadius(n, n*avgDegree/2, alpha, T);
+	R = HyperbolicSpace::getTargetRadius(static_cast<double>(n), n*avgDegree/2, alpha, T);
 	initializePoints();
 	initializeMovement();
 	if (T > 0) {
@@ -110,7 +110,7 @@ void DynamicHyperbolicGenerator::recomputeBands() {
 	#pragma omp parallel for
 	for (omp_index j = 0; j < static_cast<omp_index>(bands.size()); j++){
 		for (index i = 0; i < nodeCount; i++){
-			double alias = permutation[i];
+			const auto alias = permutation[i];
 			if (radii[alias] >= bandRadii[j] && radii[alias] <= bandRadii[j+1]){
 				bands[j].push_back(Point2D<double>(angles[alias], radii[alias], alias));
 				bandAngles[j].push_back(angles[alias]);
@@ -134,7 +134,7 @@ std::vector<Point<float> > DynamicHyperbolicGenerator::getCoordinates() const {
 	std::vector<Point<float> > result;
 	for (index i = 0; i < n; i++) {
 		Point2D<double> coord = HyperbolicSpace::polarToCartesian(angles[i], radii[i]);
-		Point<float> temp(coord[0], coord[1]);
+		Point<float> temp(static_cast<float>(coord[0]), static_cast<float>(coord[1]));
 		result.push_back(temp);
 	}
 	return result;
@@ -218,9 +218,9 @@ vector<index> DynamicHyperbolicGenerator::getNeighborsInBands(index i, bool both
 	//const double coshR = cosh(R);
 	assert(bands.size() == bandAngles.size());
 	assert(bands.size() == bandRadii.size() -1);
-	count expectedDegree = (4/PI)*nodeCount*exp(-(radii[i])/2);
+	const auto expectedDegree = static_cast<count>((4/PI)*nodeCount*exp(-(radii[i])/2));
 	vector<index> near;
-	near.reserve(expectedDegree*1.1);
+	near.reserve(static_cast<size_t>(expectedDegree*1.1));
 	for(index j = 0; j < bands.size(); j++){
 		if(bothDirections || bandRadii[j+1] > radii[i]){
 			double minTheta, maxTheta;

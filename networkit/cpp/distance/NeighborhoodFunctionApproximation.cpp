@@ -57,7 +57,7 @@ void NeighborhoodFunctionApproximation::run() {
 		// set one bit in each bitmask with probability P(bit i=1) = 0.5^(i+1), i=0,..
 		for (count j = 0; j < k; j++) {
 			double random = Aux::Random::real(0,1);
-			count position = ceil(log(random)/log(0.5) - 1);
+			const auto position = static_cast<count>(std::ceil(std::log(random)/std::log(0.5) - 1.0));
 			// set the bit in the bitmask
 			if (position < lengthOfBitmask) {
 				mPrev[v][j] = 1 << position;
@@ -68,7 +68,7 @@ void NeighborhoodFunctionApproximation::run() {
 	});
 	#pragma omp parallel for
 	for (omp_index i = 0; i < static_cast<omp_index>(k); ++i) {
-		count tmp = 0;
+		unsigned int tmp = 0;
 		for (int t = 0; t < omp_get_max_threads(); ++t) {
 			tmp |= localHighest[t][i];
 		}

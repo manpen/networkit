@@ -44,7 +44,7 @@ std::vector<std::pair<node, node>> byPercentage(std::vector<LinkPredictor::predi
   if (percentageLinks < 0 || percentageLinks > 1) {
     throw std::invalid_argument("Given percentage is not in [0, 1].");
   }
-  return byCount(predictions, percentageLinks * predictions.size());
+  return byCount(predictions, static_cast<count>(percentageLinks * predictions.size()));
 }
 
 } // namespace LinkThresholder

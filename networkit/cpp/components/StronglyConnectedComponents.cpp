@@ -119,7 +119,8 @@ void StronglyConnectedComponents::runIteratively() {
 				nextIndex++;
 				stx.push_back(u);
 				onStack[u] = true;
-				j = G.degreeOut(u);
+                assert(G.degreeOut(u) <= static_cast<count>(std::numeric_limits<int>::max()));
+				j = static_cast<int>(G.degreeOut(u));
 				DEBUG("j <- ", j, ", nextIndex=", nextIndex);
 			}
 			if (j == 0) {

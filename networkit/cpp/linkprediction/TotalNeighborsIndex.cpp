@@ -11,7 +11,7 @@
 namespace NetworKit {
 
 double TotalNeighborsIndex::runImpl(node u, node v) {
-  return NeighborhoodUtility::getNeighborsUnion(*G, u, v).size();
+  return static_cast<double>(NeighborhoodUtility::getNeighborsUnion(*G, u, v).size());
 }
 
 } // namespace NetworKit

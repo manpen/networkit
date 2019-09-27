@@ -60,7 +60,7 @@ public:
 	double scoreOfGroup(const std::vector<node> &group) const;
 
 protected:
-	edgeweight computeImprovement(node u, count n, Graph &G, count h);
+	count computeImprovement(node u, count n, Graph &G, count h);
 	std::vector<count> newDistances(node u, count n, Graph &G, count h);
 	Graph G;
 	count k = 1;

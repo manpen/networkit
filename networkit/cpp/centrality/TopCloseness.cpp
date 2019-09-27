@@ -322,7 +322,7 @@ void TopCloseness::BFSbound(node x, std::vector<double> &S2, count *visEdges,
     if (!G.isDirected() && i > 2) {
       level_bound += sumLevs[i - 3];
     }
-    if (i < nLevs) {
+    if (static_cast<node>(i) < nLevs) {
       level_bound -= (sumLevs[nLevs] - sumLevs[i + 1]);
     }
     for (count j = 0; j < levels[i].size(); j++) {

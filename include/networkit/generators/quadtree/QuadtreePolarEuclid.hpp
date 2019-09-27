@@ -47,7 +47,7 @@ public:
 			if (radius > maxRadius) maxRadius = radius;
 		}
 		maxRadius = std::nextafter(maxRadius, std::numeric_limits<double>::max());
-		root = QuadNodePolarEuclid<T>(0, 0, 2*PI, maxRadius, capacity, theoreticalSplit,balance);
+		root = QuadNodePolarEuclid<T>(0, 0, 2*PI, maxRadius, static_cast<unsigned>(capacity), theoreticalSplit,balance);
 		for (index i = 0; i < n; i++) {
 			assert(content[i] < n);
 			root.addContent(content[i], angles[i], radii[i]);

@@ -36,7 +36,7 @@ public:
 	 *
 	 */
 	Quadtree(double maxR,bool theoreticalSplit=false, double alpha=1, count capacity=1000, double balance = 0.5) {
-		root = QuadNode<T,poincare>(0, 0, 2*PI, maxR, capacity, theoreticalSplit,alpha,balance);
+		root = QuadNode<T,poincare>(0, 0, 2*PI, maxR, static_cast<unsigned>(capacity), theoreticalSplit,alpha,balance);
 		this->maxRadius = maxR;
 	}
 

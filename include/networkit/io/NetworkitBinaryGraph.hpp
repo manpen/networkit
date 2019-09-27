@@ -9,6 +9,7 @@
 
 #include <cstdint>
 #include <cstddef>
+#include <limits>
 
 #include <tlx/math/clz.hpp>
 #include <tlx/math/ffs.hpp>
@@ -135,7 +136,8 @@ inline uint64_t zigzagEncode(int64_t value) noexcept {
 
 //! Reverses zigzagEncode.
 inline int64_t zigzagDecode(uint64_t value) noexcept {
-	return (value >> 1) ^ (-(value & 1));
+	return static_cast<int64_t>(
+        (value >> 1) ^ (!!(value & 1) * std::numeric_limits<uint64_t>::max()));
 }
 
 } // namespace nkbg

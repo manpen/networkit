@@ -328,7 +328,7 @@ void KadabraBetweenness::run() {
     omega =
         0.5 / err / err * (std::log2(diameter - 1) + 1 + std::log(0.5 / delta));
 
-    const count tau = omega / startFactor;
+    const auto tau = static_cast<count>(omega / startFactor);
 
     if (unionSample == 0) {
         // In the absolute case we need to check that all the estimated

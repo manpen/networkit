@@ -125,7 +125,9 @@ std::tuple<Integer, CharIterator> strTo(CharIterator it, const CharIterator end,
 	}
 	
 	if(isNegative) {
-		val = -val;
+		// MSVC complains about inverting the sign of an unsigned type; line is only reachable for signed types
+		#pragma warning(suppress: 4146)  
+		val = -val; 
 	}
 	
 	std::tie(it, c) = dropSpaces(it, end);
@@ -149,7 +151,7 @@ std::tuple<Real, CharIterator> strTo(CharIterator it, const CharIterator end, Re
 	int exp = 0;
 	
 	auto makeReturnValue = [&]() {
-		Real fp_mantissa = mantissa;
+		auto fp_mantissa = static_cast<Real>(mantissa);
 		Real value = fp_mantissa * powerOf10(exp);
 		if (isNegative) {
 			value = -value;

@@ -78,7 +78,7 @@ void CommuteTimeDistance::runApproximation() {
 
 	// init approximation parameters
 	double epsilon2 = tol * tol;
-	k = ceil(log2(n)) / epsilon2;
+	k = static_cast<count>(std::ceil(std::log2(n)) / epsilon2);
 
 	// entries of random projection matrix
 	double randTab[2] = {1/sqrt(k), -1/sqrt(k)};
@@ -118,7 +118,7 @@ void CommuteTimeDistance::runParallelApproximation() {
 
 	// init approximation parameters
 	double epsilon2 = tol * tol;
-	k = ceil(log2(n)) / epsilon2;
+    k = static_cast<count>(std::ceil(std::log2(n)) / epsilon2);
 
 	// entries of random projection matrix
 	double randTab[3] = {1/sqrt(k), -1/sqrt(k)};

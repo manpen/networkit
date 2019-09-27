@@ -86,7 +86,7 @@ void NeighborhoodFunctionHeuristic::run() {
 			tmp += nf[tid][dist];
 		}
 		// accumulate nf
-		result[dist-1] = round(tmp * norm_factor);
+		result[dist-1] = static_cast<node>( std::round(tmp * norm_factor) );
 		if (dist > 1) {
 			result[dist-1] += result[dist-2];
 		}

@@ -167,7 +167,7 @@ public:
 	static double getTargetRadius(double n, double m, double alpha=1, double T=0, double epsilon = 0.01) {
 		double result;
 		double plexp = 2*alpha+1;
-		double targetAvgDegree = (m/n)*2;
+		double targetAvgDegree = 2.0 * m / n;
 		double xiInv = ((plexp-2)/(plexp-1));
 		if (T == 0) {
 			double v = targetAvgDegree * (PI/2)*xiInv*xiInv;

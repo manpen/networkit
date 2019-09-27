@@ -17,7 +17,8 @@ NetworKit::PowerlawDegreeSequence::PowerlawDegreeSequence(NetworKit::count minDe
 
 NetworKit::PowerlawDegreeSequence::PowerlawDegreeSequence(const std::vector< double > &degreeSequence) : minDeg(std::numeric_limits<count>::max()), maxDeg(std::numeric_limits<count>::min()) {
 	count sum = 0;
-	for (auto &d : degreeSequence) {
+	for (auto floatd : degreeSequence) {
+        const auto d = static_cast<count>(floatd);
 		if (d < minDeg) minDeg = d;
 		if (d > maxDeg) maxDeg = d;
 		sum += d;
@@ -59,7 +60,7 @@ void NetworKit::PowerlawDegreeSequence::setMinimumFromAverageDegree(double avgDe
 	count dmin_r = maxDeg;
 	setMinimumDegree(dmin_l); run();
 	double average_l = getExpectedAverageDegree();
-	double average_r = maxDeg;
+	double average_r = static_cast<double>(maxDeg);
 
 	if (average_l > avgDeg) {
 		throw std::runtime_error("The average degree is too low");
@@ -70,7 +71,7 @@ void NetworKit::PowerlawDegreeSequence::setMinimumFromAverageDegree(double avgDe
 	}
 
 	while (dmin_l + 1 < dmin_r) {
-		setMinimumDegree((dmin_r + dmin_l) * 0.5); run();
+		setMinimumDegree((dmin_r + dmin_l) / 2); run();
 		double avg = getExpectedAverageDegree();
 
 		TRACE("Trying minDeg ", minDeg, ", this gives average ", avg, ", which should be between ", average_r, " and ", average_l);
@@ -144,7 +145,7 @@ void NetworKit::PowerlawDegreeSequence::run() {
 
 	double sum = 0;
 
-	for (double d = maxDeg; d >= minDeg; --d) {
+	for (count d = maxDeg; d >= minDeg; --d) {
 		sum += std::pow(d, gamma);
 		cumulativeProbability.push_back(sum);
 	}
@@ -155,7 +156,7 @@ void NetworKit::PowerlawDegreeSequence::run() {
 
 	cumulativeProbability.back() = 1.0;
 
-	hasRun= true;
+	hasRun = true;
 }
 
 double NetworKit::PowerlawDegreeSequence::getExpectedAverageDegree() const {

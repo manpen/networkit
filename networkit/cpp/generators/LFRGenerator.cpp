@@ -30,7 +30,7 @@ void NetworKit::LFRGenerator::generatePowerlawDegreeSequence(NetworKit::count av
 
 	PowerlawDegreeSequence nodeDegreeSequence(1, maxDegree, nodeDegreeExp);
 
-	nodeDegreeSequence.setMinimumFromAverageDegree(avgDegree);
+	nodeDegreeSequence.setMinimumFromAverageDegree(static_cast<double>(avgDegree));
 	nodeDegreeSequence.run();
 
 	this->degreeSequence = nodeDegreeSequence.getDegreeSequence(n);
@@ -81,7 +81,7 @@ void NetworKit::LFRGenerator::setMu(double mu) {
 		} else if (Aux::Random::probability() >= std::remainder(intDeg, 1)) {
 			internalDegreeSequence[u] = count(intDeg);
 		} else {
-			internalDegreeSequence[u] = std::ceil(intDeg);
+			internalDegreeSequence[u] = static_cast<node>(std::ceil(intDeg));
 		}
 	}
 

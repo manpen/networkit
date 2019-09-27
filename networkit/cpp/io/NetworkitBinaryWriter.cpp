@@ -102,7 +102,7 @@ void NetworkitBinaryWriter::write(const Graph &G, const std::string &path) {
 		uint64_t weightSize;
 		switch(weightFormat) {
 			case nkbg::WEIGHT_FORMAT::VARINT:
-				weightSize = nkbg::varIntEncode(w, tmp);
+				weightSize = nkbg::varIntEncode(static_cast<uint64_t>(w), tmp);
 				outfile.write(reinterpret_cast<char*>(tmp), weightSize);
 				break;
 			case nkbg::WEIGHT_FORMAT::DOUBLE:
@@ -110,15 +110,15 @@ void NetworkitBinaryWriter::write(const Graph &G, const std::string &path) {
 				break;
 			case nkbg::WEIGHT_FORMAT::SIGNED_VARINT:
 			{
-				uint64_t weight = nkbg::zigzagEncode(w);
+				uint64_t weight = nkbg::zigzagEncode(static_cast<int64_t>(w));
 				weightSize = nkbg::varIntEncode(weight,tmp);
 				outfile.write(reinterpret_cast<char*>(tmp), weightSize);
 			}
 				break;
 			case nkbg::WEIGHT_FORMAT::FLOAT:
 			{
-				float weight = w;
-				outfile.write(reinterpret_cast<char*>(&weight), sizeof(float));
+				const auto weight = static_cast<float>(w);
+				outfile.write(reinterpret_cast<const char*>(&weight), sizeof(float));
 			}
 				break;
 			case nkbg::WEIGHT_FORMAT::NONE:
@@ -159,14 +159,14 @@ void NetworkitBinaryWriter::write(const Graph &G, const std::string &path) {
 		uint8_t tmp [10];
 		switch(weightFormat) {
 			case nkbg::WEIGHT_FORMAT::VARINT:
-				size = nkbg::varIntEncode(w,tmp);
+				size = nkbg::varIntEncode(static_cast<uint64_t>(w), tmp);
 				break;
 			case nkbg::WEIGHT_FORMAT::DOUBLE:
 				size = sizeof(double);
 				break;
 			case nkbg::WEIGHT_FORMAT::SIGNED_VARINT:
 			{
-				uint64_t weight = nkbg::zigzagEncode(w);
+				uint64_t weight = nkbg::zigzagEncode(static_cast<int64_t>(w));
 				size += nkbg::varIntEncode(weight,tmp);
 			}
 				break;

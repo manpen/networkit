@@ -104,7 +104,7 @@ void MaxentStress::run() {
 			oldCoordinates = newCoordinates;
 
 			t.start();
-			newLowerBound = floor(5 * std::log(numSolves));
+			newLowerBound = static_cast<count>(5.0 * std::log(numSolves));
 			if (newLowerBound != currentLowerBound) {
 				repulsiveForces = CoordinateVector(dim, Vector(G.numberOfNodes(), 0));
 				Octree<double> octree(oldCoordinates);
@@ -518,7 +518,7 @@ void MaxentStress::addKNeighborhoodOfVertex(const node u, const count k) {
 		}
 
 		Aux::PrioQueue<edgeweight, node> PQ(this->G.numberOfNodes());
-		std::vector<edgeweight> dist(this->G.numberOfNodes(), none);
+		std::vector<edgeweight> dist(this->G.numberOfNodes(), std::numeric_limits<edgeweight>::max());
 
 		dist[u] = 0;
 		PQ.insert(0, u);

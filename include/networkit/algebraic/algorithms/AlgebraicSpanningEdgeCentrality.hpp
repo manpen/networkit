@@ -81,7 +81,7 @@ void AlgebraicSpanningEdgeCentrality<Matrix>::runApproximation() {
 	scoreData.clear();
 	scoreData.resize(m, 0.0);
 	double epsilon2 = tol * tol;
-	const count k = ceil(log2(n)) / epsilon2;
+	const auto k = static_cast<count>(std::ceil(std::log2(n)) / epsilon2);
 	double randTab[3] = {1.0/sqrt(k), -1.0/sqrt(k)};
 
 	std::vector<Vector> yRows(k, Vector(n));

@@ -277,7 +277,7 @@ Vector CSRMatrix::diagonal() const {
 					break;
 				}
 
-				if (columnIdx[mid] < i) {
+				if (columnIdx[mid] < static_cast<node>(i)) {
 					left = mid+1;
 				} else {
 					right = mid-1;

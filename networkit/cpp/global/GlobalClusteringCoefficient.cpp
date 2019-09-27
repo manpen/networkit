@@ -7,33 +7,9 @@
 #include <networkit/global/GlobalClusteringCoefficient.hpp>
 #include <networkit/auxiliary/Random.hpp>
 
+#include <algorithm>
+
 namespace NetworKit {
-
-int uniformRandom(int max) {
-  static int offset = 0;
-  
-  int currentMax = 1;
-  int currentValue = 0;
-  while(currentMax < max) {
-    currentValue = currentValue * RAND_MAX + Aux::Random::integer();
-    currentMax *= RAND_MAX;
-  }
-  int value = currentValue % max;
-  return offset = (value + offset) % max;
-}
-
-unsigned int findIndex(const std::vector<int>& w, int v,
-                       unsigned int lowerIdx, unsigned int upperIdx) {
-  if(upperIdx - lowerIdx <= 1) {
-    return lowerIdx;
-  }
-  int middleIdx = (upperIdx + lowerIdx) / 2;
-  if(v >= w[middleIdx]) {
-    return findIndex(w, v, middleIdx, upperIdx);
-  } else {
-    return findIndex(w, v, lowerIdx, middleIdx);
-  }
-}
 
 double GlobalClusteringCoefficient::approximate(const Graph& G, int k) {
   const count n = G.numberOfNodes();
@@ -47,9 +23,10 @@ double GlobalClusteringCoefficient::approximate(const Graph& G, int k) {
   w[n] = sum;
 
   int l = 0;
-  for(int i = 0; i < k; i++) {
-    int r2 = uniformRandom(w[n]);
-    node r = findIndex(w, r2, 0, n);
+  for(count i = 0; i < k; i++) {
+    int r2 = Aux::Random::index(w[n]);
+    node r = static_cast<node>(std::distance(w.cbegin(),
+        std::lower_bound(w.cbegin(), w.cend(), r2)));
     node u = G.randomNeighbor(r);
     node w;
     do {
@@ -60,7 +37,7 @@ double GlobalClusteringCoefficient::approximate(const Graph& G, int k) {
     }
   }
 
-  return (double)l / (double)k;
+  return static_cast<double>(l) / k;
 }
 
 } /* namespace NetworKit */

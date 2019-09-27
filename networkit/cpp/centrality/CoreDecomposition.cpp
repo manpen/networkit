@@ -131,7 +131,7 @@ void CoreDecomposition::processSublevel(index level,
 	// check for each neighbor of vertices in curr if their updated degree reaches level;
 	// if so, process them next
 	for (auto u: curr) {
-		scoreData[u] = level;
+		scoreData[u] = static_cast<double>(level);
 		G.forNeighborsOf(u, [&](node v) {
 			if (degrees[v] > level) {
 				degrees[v]--;
@@ -235,7 +235,7 @@ void CoreDecomposition::runWithBucketQueues() {
 		node u = queue[i];
 		core = std::max(core, degree[u]); // core is maximum of all previously seen degrees
 
-		scoreData[u] = core;
+		scoreData[u] = static_cast<double>(core);
 
 		/* Remove a neighbor by decreasing its degree and changing its position in the queue */
 		auto removeNeighbor = [&](node v) {
@@ -335,7 +335,8 @@ index CoreDecomposition::maxCoreNumber() const {
 }
 
 double CoreDecomposition::maximum() {
-	return G.numberOfNodes() - 1;
+	assert(G.numberOfNodes() > 0);
+	return static_cast<double>(G.numberOfNodes() - 1);
 }
 
 } /* namespace NetworKit */

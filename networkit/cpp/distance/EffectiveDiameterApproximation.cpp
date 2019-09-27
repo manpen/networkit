@@ -46,7 +46,7 @@ void EffectiveDiameterApproximation::run() {
 		// set one bit in each bitmask with probability P(bit i=1) = 0.5^(i+1), i=0,..
 		for (count j = 0; j < k; j++) {
 			random = Aux::Random::real(0,1);
-			position = ceil(log(random)/log(0.5) - 1);
+            position = static_cast<count>(std::ceil(std::log(random) / std::log(0.5) - 1.0));
 			// set the bit in the bitmask
 			if (position < lengthOfBitmask+r) {
 				mPrev[v][j] |= 1 << position;
@@ -62,7 +62,7 @@ void EffectiveDiameterApproximation::run() {
 			node v = activeNodes[x];
 			#pragma omp parallel for
 			// for each parallel approximation
-			for (omp_index j = 0; j < k; j++) {
+			for (omp_index j = 0; j < static_cast<omp_index>(k); j++) {
 				// the node is still connected to all previous neighbors
 				mCurr[v][j] = mPrev[v][j];
 				// and to all previous neighbors of all its neighbors

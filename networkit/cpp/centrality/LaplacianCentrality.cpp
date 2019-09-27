@@ -17,7 +17,7 @@ void LaplacianCentrality::run() {
 	double totalLaplacianEnergy = 0.0;
 
 	G.parallelForNodes([&](node u) {
-		count degreeU = G.weightedDegree(u);
+		count degreeU = G.weightedDegree(u); // FIXME: This should be a double?! Fix by making it auto!
 		double energyLossOnNodeDrop = degreeU * degreeU;
 #pragma omp atomic
 		totalLaplacianEnergy += degreeU * degreeU;

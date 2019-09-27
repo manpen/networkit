@@ -17,26 +17,27 @@ void DegreeCentrality::run() {
 
 	if (G.isDirected() && !outDeg) {
 		G.parallelForNodes([&](node u) {
-			scoreData[u] = G.degreeIn(u);
+			scoreData[u] = static_cast<double>(G.degreeIn(u));
 		});
 	} else {
 		G.parallelForNodes([&](node u) {
-			scoreData[u] = G.degree(u);
+			scoreData[u] = static_cast<double>(G.degree(u));
 		});
 	}
 
 	if (normalized) {
-		count maxDeg = maximum();
+		const auto maxDeg = maximum();
 		G.parallelForNodes([&](node u) {
 			scoreData[u] = scoreData[u] / maxDeg;
 		});
 	}
+
 	hasRun = true;
 }
 
 
 double DegreeCentrality::maximum() {
-	return G.numberOfNodes() - ignoreSelfLoops;
+	return static_cast<double>(G.numberOfNodes() - ignoreSelfLoops);
 }
 
 

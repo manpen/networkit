@@ -143,7 +143,7 @@ Graph NetworkitBinaryReader::read(const std::string& path) {
 					{
 						uint64_t unsignedWeight;
 						wghtOff += nkbg::varIntDecode(reinterpret_cast<const uint8_t*>(adjWghtIt + wghtOff), unsignedWeight);
-						weight = unsignedWeight;
+						weight = static_cast<double>(unsignedWeight);
 					}
 						break;
 					case nkbg::WEIGHT_FORMAT::DOUBLE:
@@ -154,7 +154,7 @@ Graph NetworkitBinaryReader::read(const std::string& path) {
 					{
 						uint64_t unsignedWeight;
 						wghtOff += nkbg::varIntDecode(reinterpret_cast<const uint8_t*>(adjWghtIt + wghtOff), unsignedWeight);
-						weight = nkbg::zigzagDecode(unsignedWeight);
+						weight = static_cast<double>(nkbg::zigzagDecode(unsignedWeight));
 					}
 						break;
 					case nkbg::WEIGHT_FORMAT::FLOAT:
@@ -187,7 +187,7 @@ Graph NetworkitBinaryReader::read(const std::string& path) {
 					{
 						uint64_t unsignedWeight;
 						transWghtOff += nkbg::varIntDecode(reinterpret_cast<const uint8_t*>(transpWghtIt + transWghtOff), unsignedWeight);
-						weight = unsignedWeight;
+						weight = static_cast<double>(unsignedWeight);
 					}
 						break;
 					case nkbg::WEIGHT_FORMAT::DOUBLE:
@@ -198,7 +198,7 @@ Graph NetworkitBinaryReader::read(const std::string& path) {
 					{
 						uint64_t unsignedWeight;
 						transWghtOff += nkbg::varIntDecode(reinterpret_cast<const uint8_t*>(transpWghtIt + transWghtOff), unsignedWeight);
-						weight = nkbg::zigzagDecode(unsignedWeight);
+						weight = static_cast<double>(nkbg::zigzagDecode(unsignedWeight));
 					}
 						break;
 					case nkbg::WEIGHT_FORMAT::FLOAT:

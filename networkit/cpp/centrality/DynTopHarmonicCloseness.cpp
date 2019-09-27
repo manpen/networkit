@@ -81,7 +81,7 @@ DynTopHarmonicCloseness::BFScut(node v, edgeweight x, count n, count r,
 
 			if (ctilde < x) {
 				exactCutOff[v] = true;
-				cutOff[v] = d;
+				cutOff[v] = static_cast<double>(d);
 				cleanup();
 				return std::make_pair(ctilde, false);
 			}
@@ -120,7 +120,7 @@ DynTopHarmonicCloseness::BFScut(node v, edgeweight x, count n, count r,
 		});
 		if (ctilde < x) {
 			exactCutOff[v] = false;
-			cutOff[v] = d;
+			cutOff[v] = static_cast<double>(d);
 			cleanup();
 
 			return std::make_pair(ctilde, false);
@@ -149,7 +149,9 @@ void DynTopHarmonicCloseness::BFSbound(node source, std::vector<double> &S2,
 	auto inverseDistance = [&](edgeweight dist) { return 1.0 / dist; };
 
 	G.BFSfrom(source, [&](node u, count dist) {
-		sum_dist += dist > 0 ? inverseDistance(dist) : 0;
+        if (dist > 0) {
+            sum_dist += inverseDistance(dist);
+        }
 
 		++r;
 		if (dist > nLevs) {
@@ -254,7 +256,9 @@ void DynTopHarmonicCloseness::run() {
 	// Main priority queue with all nodes in order of decreasing degree
 	Aux::PrioQueue<edgeweight, node> Q1(n);
 
-	G.forNodes([&](node v) { Q1.insert(-(n + G.degree(v)), v); });
+	G.forNodes([&](node v) { 
+        Q1.insert(static_cast<edgeweight>(-static_cast<int64_t>(n + G.degree(v))), v); 
+    });
 
 	Aux::PrioQueue<edgeweight, node> top(n);
 
@@ -320,7 +324,7 @@ void DynTopHarmonicCloseness::run() {
 							// might have changed
 							allScores[u] = S[u];
 							isValid[u] = true;
-							Q1.remove(-u);
+							Q1.remove(-static_cast<int64_t>(u));
 							Q1.insert(-allScores[u], u);
 						}
 						omp_unset_lock(&lock);
@@ -608,7 +612,7 @@ void DynTopHarmonicCloseness::addEdge(const GraphEvent &event) {
 								allScores[u] = S[u];
 								isValid[u] = true;
 								isExact[u] = false;
-								Q1.remove(-u);
+								Q1.remove(-static_cast<int64_t>(u));
 								Q1.insert(allScores[u], u);
 							}
 							omp_unset_lock(&lock);

@@ -488,7 +488,7 @@ public:
 		}
 		TRACE("probUB: ", probUB, ", probdenom: ", probdenom);
 
-		count expectedNeighbours = probUB*size();
+		const auto expectedNeighbours = static_cast<count>(probUB*size());
 		count candidatesTested = 0;
 
 		if (isLeaf) {
@@ -497,11 +497,10 @@ public:
 			for (index i = 0; i < lsize; i++) {
 				//jump!
 				if (probUB < 1) {
-					double random = Aux::Random::real();
-					double delta = std::log(random) / probdenom;
-					assert(delta == delta);
+					double delta = std::log(Aux::Random::real()) / probdenom;
+                    assert(std::isfinite(delta));
 					assert(delta >= 0);
-					i += delta;
+					i += static_cast<index>(delta);
 					if (i >= lsize) break;
 					TRACE("Jumped with delta ", delta, " arrived at ", i);
 				}
@@ -530,7 +529,7 @@ public:
 				for (index i = 0; i < stsize; i++) {
 					double delta = std::log(Aux::Random::real()) / probdenom;
 					assert(delta >= 0);
-					i += delta;
+					i += static_cast<index>(delta);
 					TRACE("Jumped with delta ", delta, " arrived at ", i, ". Calling maybeGetKthElement.");
 					if (i < size()) maybeGetKthElement(probUB, euQuery, prob, i, result);//this could be optimized. As of now, the offset is subtracted separately for each point
 					else break;

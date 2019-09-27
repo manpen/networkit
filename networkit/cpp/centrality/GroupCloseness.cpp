@@ -20,7 +20,7 @@ namespace NetworKit {
 GroupCloseness::GroupCloseness(const Graph &G, count k, count H)
     : G(G), k(k), H(H) {}
 
-edgeweight GroupCloseness::computeImprovement(node u, count n, Graph &G,
+count GroupCloseness::computeImprovement(node u, count n, Graph &G,
                                               count h) {
 	// computes the marginal gain due to adding u to S
 	std::vector<count> d1(n);
@@ -114,7 +114,7 @@ void GroupCloseness::run() {
 	BFS bfs(G, top);
 	bfs.run();
 
-	G.parallelForNodes([&](node v) { d[v] = bfs.distance(v); });
+	G.parallelForNodes([&](node v) { d[v] = static_cast<count>(bfs.distance(v)); });
 
 	// get max distance
 	maxD = 0;
@@ -148,7 +148,7 @@ void GroupCloseness::run() {
 		DEBUG("k = ", i);
 		G.parallelForNodes([&](node v) { prios[v] = -prevBound[v]; });
 		// Aux::BucketPQ Q(prios, currentImpr + 1);
-		Aux::BucketPQ Q(n, -currentImpr - 1, 0);
+		Aux::BucketPQ Q(n, -static_cast<int64_t>(currentImpr) - 1, 0);
 		G.forNodes([&](node v) { Q.insert(prios[v], v); });
 		currentImpr = 0;
 		maxNode = 0;

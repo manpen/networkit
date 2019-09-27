@@ -113,8 +113,8 @@ public:
 
 				for(unsigned i = 0; i <= tid; i++) {
 					first_node = last_node;
-					node upper_node = std::ceil(std::sqrt(
-						0.25 + first_node * first_node + first_node + 2*chunk_size));
+					auto upper_node = static_cast<node>(std::ceil(std::sqrt(
+						0.25 + first_node * first_node + first_node + 2*chunk_size)));
 					last_node = std::min<node>(n, upper_node);
 				}
 
@@ -147,7 +147,7 @@ public:
 	 * Returns the expected number of edges to be generated.
 	 */
 	count expectedNumberOfEdges() const {
-		return prob * n * (directed ? n : (n-1) * 0.5);
+		return static_cast<count>(prob * n * (directed ? n : (n-1) * 0.5));
 	}
 
 

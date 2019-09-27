@@ -148,7 +148,7 @@ public:
      */
     count getSumOfDistances() const {
         assureFinished();
-        return sumDist;
+        return static_cast<count>(sumDist);
     }
 
 protected:

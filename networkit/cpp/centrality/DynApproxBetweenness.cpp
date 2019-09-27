@@ -39,10 +39,10 @@ void DynApproxBetweenness::run() {
 
     Diameter diam(G, DiameterAlgo::estimatedPedantic);
     diam.run();
-    edgeweight vd = diam.getDiameter().first;
+    const auto vd = static_cast<edgeweight>(diam.getDiameter().first);
 
     INFO("estimated diameter: ", vd);
-    r = ceil((universalConstant / (epsilon * epsilon)) * (floor(log2(vd - 2)) + 1 - log(delta)));
+    r = static_cast<count>(ceil((universalConstant / (epsilon * epsilon)) * (floor(log2(vd - 2)) + 1 - log(delta))));
     INFO("taking ", r, " path samples");
     sssp.clear();
     sssp.resize(r);

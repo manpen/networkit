@@ -69,7 +69,7 @@ TopHarmonicCloseness::BFScut(node v, edgeweight x, count n, count r,
 
       if (ctilde < x) {
         exactCutOff[v] = true;
-        cutOff[v] = d;
+        cutOff[v] = static_cast<double>(d);
         cleanup();
         return std::make_pair(ctilde, false);
       }
@@ -108,7 +108,7 @@ TopHarmonicCloseness::BFScut(node v, edgeweight x, count n, count r,
     });
     if (ctilde < x) {
       exactCutOff[v] = false;
-      cutOff[v] = d;
+      cutOff[v] = static_cast<double>(d);
       cleanup();
 
       return std::make_pair(ctilde, false);
@@ -138,7 +138,8 @@ void TopHarmonicCloseness::BFSbound(node source, std::vector<double> &S2,
   auto inverseDistance = [&](edgeweight dist) { return 1.0 / dist; };
 
   G.BFSfrom(source, [&](node u, count dist) {
-    sum_dist += dist > 0 ? inverseDistance(dist) : 0;
+    if (dist > 0)
+        sum_dist += inverseDistance(dist);
 
     r++;
     if (dist > nLevs) {
@@ -243,7 +244,9 @@ void TopHarmonicCloseness::run() {
   // Main priority queue with all nodes in order of decreasing degree
   Aux::PrioQueue<edgeweight, node> Q1(n);
 
-  G.forNodes([&](node v) { Q1.insert(n + G.degree(v), v); });
+  G.forNodes([&](node v) { 
+      Q1.insert(static_cast<edgeweight>(n + G.degree(v)), v); 
+  });
 
   Aux::PrioQueue<edgeweight, node> top(n);
 

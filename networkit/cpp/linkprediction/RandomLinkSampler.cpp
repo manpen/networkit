@@ -15,7 +15,7 @@ Graph byPercentage(const Graph& G, double trainPercentage) {
   if (trainPercentage < 0 || trainPercentage > 1) {
     throw std::invalid_argument("Given percentage is not in [0, 1].");
   }
-  return byCount(G, trainPercentage * G.numberOfEdges());
+  return byCount(G, static_cast<count>(trainPercentage * G.numberOfEdges()));
 }
 
 Graph byCount(const Graph& G, count numTrainLinks) {

@@ -143,15 +143,13 @@ void DynamicNMIDistance::combineValues(double H_sum, double MI, double& NMI, dou
 }
 
 double DynamicNMIDistance::entropy(const Partition& clustering, count n, std::vector<double> probs) {
-	auto log_b = Aux::MissingMath::log_b; // import convenient logarithm function
-
 	// $H(\zeta):=-\sum_{C\in\zeta}P(C)\cdot\log_{2}(P(C))$
 	double H = 0.0;
 	#pragma omp parallel for reduction(+:H)
 	for (omp_index C = static_cast<omp_index>(clustering.lowerBound());
 		 C < static_cast<omp_index>(clustering.upperBound()); ++C) {
 		if (probs[C] != 0) {
-			H += probs[C] * log_b(probs[C], 2);
+			H += probs[C] * Aux::MissingMath::log_b(probs[C], 2);
 		} // log(0) is not defined
 	}
 	H = -1.0 * H;
@@ -160,7 +158,8 @@ double DynamicNMIDistance::entropy(const Partition& clustering, count n, std::ve
 
 	// entropy values range from 0 for the 1-clustering to log_2(n) for the singleton clustering
 	assert (Aux::NumericTools::ge(H, 0.0));
-	assert (Aux::NumericTools::le(H, log_b(n, 2)));
+	assert (Aux::NumericTools::le(H, 
+        Aux::MissingMath::log_b(static_cast<double>(n), 2)));
   (void)n;
 
 	return H;

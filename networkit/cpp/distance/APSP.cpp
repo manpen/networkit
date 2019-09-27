@@ -32,7 +32,7 @@ void APSP::run() {
     }
 
 #pragma omp parallel for schedule(dynamic)
-    for (omp_index source = 0; source < n; ++source) {
+    for (omp_index source = 0; source < static_cast<omp_index>(n); ++source) {
         auto sssp = sssps[omp_get_thread_num()].get();
         sssp->setSource(source);
         sssp->run();

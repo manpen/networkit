@@ -324,7 +324,7 @@ private:
 template<typename T>
 Octree<T>::Octree(const std::vector<Vector>& points) {
 	dimensions = points.size();
-	numChildrenPerNode = pow(2, dimensions);
+	numChildrenPerNode = count(1) << dimensions;
 	batchInsert(points);
 //	root.compress();
 }
