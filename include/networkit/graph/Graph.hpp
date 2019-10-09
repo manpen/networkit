@@ -20,10 +20,10 @@
 
 #include <networkit/Globals.hpp>
 #include <networkit/auxiliary/FunctionTraits.hpp>
-#include <networkit/auxiliary/Log.hpp>
 #include <networkit/auxiliary/Random.hpp>
 #include <networkit/viz/Point.hpp>
 #include <networkit/graph/Coordinates.hpp>
+
 #include <tlx/define/deprecated.hpp>
 
 namespace NetworKit {
@@ -381,8 +381,7 @@ class Graph final {
                   std::is_same<edgeweight,
                                typename Aux::FunctionTraits<F>::template arg<
                                    2>::type>::value>::type * = (void *)0>
-    auto edgeLambda(F &f, node u, node v, edgeweight ew, edgeid /*id*/) const
-        -> decltype(f(u, v, ew)) {
+    auto edgeLambda(F &f, node u, node v, edgeweight ew, edgeid /*id*/) const -> decltype(f(u, v, ew)) {
         return f(u, v, ew);
     }
 
@@ -397,8 +396,7 @@ class Graph final {
             (Aux::FunctionTraits<F>::arity >= 1) &&
             std::is_same<node, typename Aux::FunctionTraits<F>::template arg<
                                    1>::type>::value>::type * = (void *)0>
-    auto edgeLambda(F &f, node u, node v, edgeweight /*ew*/,
-                    edgeid /*id*/) const -> decltype(f(u, v)) {
+    auto edgeLambda(F &f, node u, node v, edgeweight /*ew*/, edgeid /*id*/) const -> decltype(f(u, v)) {
         return f(u, v);
     }
 
@@ -414,8 +412,7 @@ class Graph final {
                   std::is_same<edgeweight,
                                typename Aux::FunctionTraits<F>::template arg<
                                    1>::type>::value>::type * = (void *)0>
-    auto edgeLambda(F &f, node u, node v, edgeweight ew, edgeid /*id*/) const
-        -> decltype(f(u, ew)) {
+    auto edgeLambda(F &f, node, node v, edgeweight ew, edgeid /*id*/) const -> decltype(f(v, ew)) {
         return f(v, ew);
     }
 
@@ -424,8 +421,7 @@ class Graph final {
      * first node id, the edge weight and the edge id
      */
     template <class F, void * = (void *)0>
-    auto edgeLambda(F &f, node, node v, edgeweight, edgeid) const
-        -> decltype(f(v)) {
+    auto edgeLambda(F &f, node, node v, edgeweight, edgeid) const -> decltype(f(v)) {
         return f(v);
     }
 
@@ -598,7 +594,7 @@ public:
     template <bool InEdges = false> class NeighborRange {
       public:
         NeighborRange(const Graph &G, node u) : G(&G), u(u){
-			assert(G.hasNode(u));
+            assert(G.hasNode(u));
         };
 
         NeighborRange() : G(nullptr) {};
@@ -695,28 +691,28 @@ public:
     /** Default copy assignment operator */
     Graph &operator=(const Graph &other) = default;
 
-	/**
-	 * Reserves memory in the node's edge containers for undirected graphs.
-	 *
-	 * @param u the node memory should be reserved for
-	 * @param size the amount of memory to reserve
-	 *
-	 * This function is thread-safe if called from different
-	 * threads on different nodes.
-	 */
-	void preallocateUndirected(node u, size_t size);
+    /**
+     * Reserves memory in the node's edge containers for undirected graphs.
+     *
+     * @param u the node memory should be reserved for
+     * @param size the amount of memory to reserve
+     *
+     * This function is thread-safe if called from different
+     * threads on different nodes.
+     */
+    void preallocateUndirected(node u, size_t size);
 
-	/**
-	 * Reserves memory in the node's edge containers for directed graphs.
-	 *
-	 * @param u the node memory should be reserved for
-	 * @param inSize the amount of memory to reserve for in edges
-	 * @param outSize the amount of memory to reserve for out edges
-	 *
-	 * This function is thread-safe if called from different
-	 * threads on different nodes.
-	 */
-	void preallocateDirected(node u, size_t outSize, size_t inSize);
+    /**
+     * Reserves memory in the node's edge containers for directed graphs.
+     *
+     * @param u the node memory should be reserved for
+     * @param inSize the amount of memory to reserve for in edges
+     * @param outSize the amount of memory to reserve for out edges
+     *
+     * This function is thread-safe if called from different
+     * threads on different nodes.
+     */
+    void preallocateDirected(node u, size_t outSize, size_t inSize);
 
     /** EDGE IDS **/
 
@@ -794,14 +790,14 @@ public:
      */
     std::string getName() const { return name; }
 
-	/**
-	 * Set edge count of the graph to edges.
-	 * @param edges the edge count of a graph
-	 */
-	void setEdgeCount(Unsafe, count edges) { m = edges; }
+    /**
+     * Set edge count of the graph to edges.
+     * @param edges the edge count of a graph
+     */
+    void setEdgeCount(Unsafe, count edges) { m = edges; }
 
-	void setNumberOfSelfLoops(Unsafe, count loops) { storedNumberOfSelfLoops = loops; }
-	/**
+    void setNumberOfSelfLoops(Unsafe, count loops) { storedNumberOfSelfLoops = loops; }
+    /**
      * Returns a string representation of the graph.
      * @return A string representation.
      */
@@ -1045,7 +1041,7 @@ public:
      * @param ew Optional edge weight.
      * @param index Optional node index.
      */
-	void addPartialInEdge(Unsafe, node u, node v, edgeweight ew = defaultEdgeWeight, uint64_t index = 0);
+    void addPartialInEdge(Unsafe, node u, node v, edgeweight ew = defaultEdgeWeight, uint64_t index = 0);
 
     /**
      * Insert an out edge between the nodes @a u and @a v in a directed graph. If the graph is
@@ -1057,7 +1053,7 @@ public:
      * @param ew Optional edge weight.
      * @param index Optional node index.
      */
-	void addPartialOutEdge(Unsafe, node u, node v, edgeweight ew = defaultEdgeWeight, uint64_t index = 0);
+    void addPartialOutEdge(Unsafe, node u, node v, edgeweight ew = defaultEdgeWeight, uint64_t index = 0);
 
 
     /**
@@ -1088,11 +1084,11 @@ public:
      * @param condition A function that takes a node as an input and returns a
      * bool. If true the edge (u, v) is removed.
      * @param edgesIn Whether in-going or out-going edges shall be removed.
-     * @return count The number of removed edges.
+     * @return std::pair<count, count> The number of removed edges (first) and the number of removed
+     * self-loops (second).
      */
     template <typename Condition>
-    count removeAdjacentEdges(node u, Condition condition, bool edgesIn = false);
-
+    std::pair<count, count> removeAdjacentEdges(node u, Condition condition, bool edgesIn = false);
 
     /**
      * Removes all self-loops in the graph.
@@ -2131,30 +2127,36 @@ template <typename L> void Graph::DFSEdgesFrom(node r, L handle) const {
 /* EDGE MODIFIERS */
 
 template <typename Condition>
-count Graph::removeAdjacentEdges(node u, Condition condition, bool edgesIn) {
-	count removedEdges = 0;
-	auto &edges_ = outEdges[u];
-	for (index vi = 0; vi < edges_.size();) {
-		if (condition(edges_[vi])) {
-			++removedEdges;
-			edges_[vi] = edges_.back();
-			edges_.pop_back();
-			if (isWeighted()) {
-				auto &weights_ = edgesIn ? inEdgeWeights[u] : outEdgeWeights[u];
-				weights_[vi] = weights_.back();
-				weights_.pop_back();
-			}
-			if (hasEdgeIds()) {
-				auto &edgeIds_ = edgesIn ? inEdgeIds[u] : outEdgeIds[u];
-				edgeIds_[vi] = edgeIds_.back();
-				edgeIds_.pop_back();
-			}
-		} else {
-			++vi;
-		}
-	}
+std::pair<count, count> Graph::removeAdjacentEdges(node u, Condition condition, bool edgesIn) {
+    count removedEdges = 0;
+    count removedSelfLoops = 0;
 
-	return removedEdges;
+    // For directed graphs, this function is supposed to be called twice: one to remove out-edges,
+    // and one to remove in-edges.
+    auto &edges_ = edgesIn ? inEdges[u] : outEdges[u];
+    for (index vi = 0; vi < edges_.size();) {
+        if (condition(edges_[vi])) {
+            const auto isSelfLoop = (edges_[vi] == u);
+            removedSelfLoops += isSelfLoop;
+            removedEdges += !isSelfLoop;
+            edges_[vi] = edges_.back();
+            edges_.pop_back();
+            if (isWeighted()) {
+                auto &weights_ = edgesIn ? inEdgeWeights[u] : outEdgeWeights[u];
+                weights_[vi] = weights_.back();
+                weights_.pop_back();
+            }
+            if (hasEdgeIds()) {
+                auto &edgeIds_ = edgesIn ? inEdgeIds[u] : outEdgeIds[u];
+                edgeIds_[vi] = edgeIds_.back();
+                edgeIds_.pop_back();
+            }
+        } else {
+            ++vi;
+        }
+    }
+
+    return {removedEdges, removedSelfLoops};
 }
 
 

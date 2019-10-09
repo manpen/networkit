@@ -13,6 +13,7 @@
 
 #include <networkit/base/Algorithm.hpp>
 #include <networkit/graph/Graph.hpp>
+#include <networkit/auxiliary/Multiprecision.hpp>
 #include <tlx/define/deprecated.hpp>
 
 namespace NetworKit {
@@ -140,6 +141,15 @@ public:
         if (!G.hasNode(newSource))
             throw std::runtime_error("Error: node not in the graph.");
         source = newSource;
+    }
+
+    /**
+     * Sets a new target.
+     */
+    void setTarget(node newTarget) {
+        if (!G.hasNode(newTarget))
+            throw std::runtime_error("Error: node not in the graph.");
+        target = newTarget;
     }
 
     /**

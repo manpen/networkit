@@ -13,6 +13,7 @@ option(NETWORKIT_STATIC "Build static libraries" OFF)
 option(NETWORKIT_MONOLITH "Build single library (and tests is requested; required for shared lib)" ON)
 option(NETWORKIT_NATIVE "Optimize for native architecture (often better performance)" OFF)
 option(NETWORKIT_WARNINGS "Issue more warnings" OFF)
+option(NETWORKIT_WARNINGS_AS_ERRORS "Treat warnings as errors (except deprecated)" OFF)
 option(NETWORKIT_FLATINSTALL "Install into a flat directory structure (useful when building a Python package)" OFF)
 option(NETWORKIT_COVERAGE "Build with support for coverage" OFF)
 option(NETWORKIT_COMPILE_HEADERS "Test header files for self-sufficiency: try to compile them." OFF)
@@ -20,6 +21,7 @@ set(NETWORKIT_PYTHON "" CACHE STRING "Directory containing Python.h. Implies MON
 set(NETWORKIT_PYTHON_SOABI "" CACHE STRING "Platform specific file extension. Implies MONOLITH=TRUE")
 set(NETWORKIT_WITH_SANITIZERS "" CACHE STRING "Uses sanitizers during the compilation")
 set(NETWORKIT_RELEASE_LOGGING "AUTO" CACHE STRING "Do not compile log messages at levels TRACE or DEBUG (AUTO|ON|OFF)")
+set(NETWORKIT_PYTHON_RPATH "" CACHE STRING "Build specific rpath references.")
 
 set (NETWORKIT_CXX_STANDARD "11" CACHE STRING "CXX Version to compile with. Currently fixed to 11")
 
@@ -79,6 +81,9 @@ if (("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang") OR
 	endif()
 	if (NETWORKIT_WARNINGS)
 		set(NETWORKIT_CXX_FLAGS "${NETWORKIT_CXX_FLAGS} -Wall -Wextra -Wpedantic")
+	endif()
+	if (NETWORKIT_WARNINGS_AS_ERRORS)
+		set(NETWORKIT_CXX_FLAGS "${NETWORKIT_CXX_FLAGS} -Werror -Wno-error=deprecated-declarations")
 	endif()
 
 elseif (MSVC)
@@ -197,6 +202,7 @@ if(NETWORKIT_BUILD_CORE AND NETWORKIT_MONOLITH)
 
 	target_link_libraries(networkit PRIVATE tlx OpenMP::OpenMP_CXX)
 	target_include_directories(networkit BEFORE PUBLIC "${PROJECT_SOURCE_DIR}/include")
+	target_include_directories(networkit PUBLIC "${PROJECT_SOURCE_DIR}/extlibs/ttmath/")
 endif()
 
 if(NETWORKIT_PYTHON)
@@ -206,6 +212,7 @@ if(NETWORKIT_PYTHON)
 
 	add_library(_NetworKit MODULE networkit/_NetworKit.cpp)
 	target_include_directories(_NetworKit BEFORE PUBLIC "${PROJECT_SOURCE_DIR}/include")
+	target_include_directories(_NetworKit PRIVATE "${PROJECT_SOURCE_DIR}/extlibs/ttmath/")
 	target_include_directories(_NetworKit PRIVATE "${NETWORKIT_PYTHON}")
 
 	if(NOT NETWORKIT_BUILD_CORE)
@@ -223,13 +230,19 @@ if(NETWORKIT_PYTHON)
 				LINK_FLAGS "${NETWORKIT_LINK_FLAGS}"
 				PREFIX ""
 				OUTPUT_NAME "_NetworKit.${NETWORKIT_PYTHON_SOABI}")
-	# DSOs on Apple OSes use different conventions for RPATH.
-	if(APPLE)
+	# If rpath-content is set explicitly, omit the dynamic binary path
+	if(NETWORKIT_PYTHON_RPATH)
 		set_target_properties(_NetworKit PROPERTIES
-				INSTALL_RPATH "@loader_path")
+			INSTALL_RPATH "${NETWORKIT_PYTHON_RPATH}")
 	else()
-		set_target_properties(_NetworKit PROPERTIES
+		# DSOs on Apple OSes use different conventions for RPATH.
+		if(APPLE)
+			set_target_properties(_NetworKit PROPERTIES
+				INSTALL_RPATH "@loader_path")
+		else()
+			set_target_properties(_NetworKit PROPERTIES
 				INSTALL_RPATH "$ORIGIN")
+		endif()
 	endif()
 
 	target_link_libraries(_NetworKit PRIVATE tlx OpenMP::OpenMP_CXX)
@@ -262,6 +275,7 @@ function(networkit_add_module modname)
 
 		target_link_libraries(${MODULE_TARGET} PRIVATE tlx OpenMP::OpenMP_CXX)
 		target_include_directories(${MODULE_TARGET} BEFORE PUBLIC "${PROJECT_SOURCE_DIR}/include")
+		target_include_directories(${MODULE_TARGET} PUBLIC "${PROJECT_SOURCE_DIR}/extlibs/ttmath/")
 
 		# All tests added to this module will will also become a dependency
 		# of networkit_tests_MODNAME. This target hence allows to build all

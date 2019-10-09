@@ -8,8 +8,6 @@
 #ifndef LINEFILEREADER_H_
 #define LINEFILEREADER_H_
 
-#include <fstream>
-#include <iostream>
 #include <string>
 #include <vector>
 
@@ -21,7 +19,7 @@ namespace NetworKit {
  */
 class LineFileReader {
 public:
-	std::vector<std::string> read(std::string path);
+    std::vector<std::string> read(std::string path);
 };
 
 } /* namespace NetworKit */

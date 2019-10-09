@@ -7,9 +7,9 @@
 #include <networkit/auxiliary/StringBuilder.hpp>
 
 #ifdef _MSC_VER
-	#define NETWORKT_PRETTY_FUNCTION __FUNCSIG__
+    #define NETWORKT_PRETTY_FUNCTION __FUNCSIG__
 #else
-	#define NETWORKT_PRETTY_FUNCTION __PRETTY_FUNCTION__
+    #define NETWORKT_PRETTY_FUNCTION __PRETTY_FUNCTION__
 #endif
 
 /// Logging without format string
@@ -28,12 +28,12 @@
 
 // DEBUG and TRACE are no-ops if NETWORKIT_RELEASE_LOGGING is defined.
 #if defined(NETWORKIT_RELEASE_LOGGING)
-#	define DEBUG(...) do {} while(false)
-#	define DEBUGF(...) do {} while(false)
-
-#	define TRACE(...) do {} while(false)
-#	define TRACEF(...) do {} while(false)
-#	define TRACEPOINT do {} while(false)
+#   define NETWORKIT_LOG_DUMMY(...) do {} while(false)
+#	define DEBUG(...)  NETWORKIT_LOG_DUMMY(__VA_ARGS__)
+#	define DEBUGF(...) NETWORKIT_LOG_DUMMY(__VA_ARGS__)
+#	define TRACE(...)  NETWORKIT_LOG_DUMMY(__VA_ARGS__)
+#	define TRACEF(...) NETWORKIT_LOG_DUMMY(__VA_ARGS__)
+#	define TRACEPOINT  NETWORKIT_LOG_DUMMY()
 #else
 #	define DEBUG(...) LOG_AT(::Aux::Log::LogLevel::debug, __VA_ARGS__)
 #	define TRACE(...) LOG_AT(::Aux::Log::LogLevel::trace, __VA_ARGS__)
@@ -47,19 +47,19 @@
 namespace Aux { namespace Log {
 
 struct Location {
-	const char* file;
-	const char* function;
-	const int line;
+    const char* file;
+    const char* function;
+    const int line;
 };
 
 enum class LogLevel {
-	trace,
-	debug,
-	info,
-	warn,
-	error,
-	fatal,
-	quiet // Emits no log messages at all.
+    trace,
+    debug,
+    info,
+    warn,
+    error,
+    fatal,
+    quiet // Emits no log messages at all.
 };
 
 /**
@@ -93,27 +93,27 @@ void log(const Location &loc, LogLevel p, const std::string &msg);
 
 ///! Returns true iff logging at the provided level is currently activated
 inline bool isLogLevelEnabled(LogLevel p) noexcept {
-	return p >= Settings::getLogLevel();
+    return p >= Settings::getLogLevel();
 }
 
 template<typename...T>
 void log(const Location &loc, LogLevel p, const T &...args) {
-	if(!isLogLevelEnabled(p))
-		return;
+    if(!isLogLevelEnabled(p))
+        return;
 
-	std::stringstream stream;
-	printToStream(stream, args...);
-	Impl::log(loc, p, stream.str());
+    std::stringstream stream;
+    printToStream(stream, args...);
+    Impl::log(loc, p, stream.str());
 }
 
 template<typename...T>
 void logF(const Location &loc, LogLevel p, const std::string &format, const T &...args) {
-	if(!isLogLevelEnabled(p))
-		return;
+    if(!isLogLevelEnabled(p))
+        return;
 
-	std::stringstream stream;
-	printToStreamF(stream, format, args...);
-	Impl::log(loc, p, stream.str());
+    std::stringstream stream;
+    printToStreamF(stream, format, args...);
+    Impl::log(loc, p, stream.str());
 }
 
 }} // namespace Aux::Log
