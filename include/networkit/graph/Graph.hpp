@@ -2133,23 +2133,38 @@ std::pair<count, count> Graph::removeAdjacentEdges(node u, Condition condition, 
 
     // For directed graphs, this function is supposed to be called twice: one to remove out-edges,
     // and one to remove in-edges.
-    auto &edges_ = edgesIn ? inEdges[u] : outEdges[u];
+    auto &edges_   = edgesIn ? inEdges[u]       : outEdges[u];
+
+    // We've to use pointers: as the vectors may be empty, we're not allowed to take the efenence
+    // non-existing items. However, we may take their hypothetical addresses, as long as we're
+    // not dereferencing them
+    auto* weights_ = (edgesIn ? inEdgeWeights.data() : outEdgeWeights.data()) + u;
+    auto* edgeIds_ = (edgesIn ? inEdgeIds.data()     : outEdgeIds.data()) + u;
+
+    // Use local copies, as this yields better code (compiler knows, that the values are const!)
+    const auto isWeighted = this->isWeighted();
+    const auto isIndexed  = this->hasEdgeIds();
+
     for (index vi = 0; vi < edges_.size();) {
-        if (condition(edges_[vi])) {
-            const auto isSelfLoop = (edges_[vi] == u);
+        const auto v = edges_[vi];
+        const auto weight = isWeighted ? (*weights_)[vi] : defaultEdgeWeight;
+        const auto edgeId = isIndexed  ? (*edgeIds_)[vi] : 0;
+
+        if (edgeLambda(condition, u, v, weight, edgeId)) {
+            const auto isSelfLoop = (v == u);
             removedSelfLoops += isSelfLoop;
             removedEdges += !isSelfLoop;
             edges_[vi] = edges_.back();
             edges_.pop_back();
-            if (isWeighted()) {
-                auto &weights_ = edgesIn ? inEdgeWeights[u] : outEdgeWeights[u];
-                weights_[vi] = weights_.back();
-                weights_.pop_back();
+
+            if (isWeighted) {
+                (*weights_)[vi] = weights_->back();
+                weights_->pop_back();
             }
-            if (hasEdgeIds()) {
-                auto &edgeIds_ = edgesIn ? inEdgeIds[u] : outEdgeIds[u];
-                edgeIds_[vi] = edgeIds_.back();
-                edgeIds_.pop_back();
+
+            if (isIndexed) {
+                (*edgeIds_)[vi] = edgeIds_->back();
+                edgeIds_->pop_back();
             }
         } else {
             ++vi;
