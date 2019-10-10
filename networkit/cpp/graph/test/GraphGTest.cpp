@@ -2443,4 +2443,56 @@ TEST_P(GraphGTest, testRemoveMultiEdges) {
         EXPECT_EQ(edgeSet[i], edgeSet_[i]);
 }
 
+TEST_P(GraphGTest, testRemoveEdgeIf) {
+    constexpr node n = 100;
+    constexpr count m = 10 * n;
+
+    Aux::Random::setSeed(42, true);
+    Graph G(n, isWeighted(), isDirected());
+
+    auto weightedCondition   = []  (node, node, edgeweight w) { return w > 0.5; };
+    auto unweightedCondition = [] (node u, node v) {return (u < n/2) == (v < n/2);};
+
+    while(G.numberOfEdges() < m) {
+        const auto u = Aux::Random::index(n);
+        const auto v = Aux::Random::index(n);
+        if (u == v) continue;
+        if (G.hasEdge(u, v)) continue;
+
+        const auto p = Aux::Random::probability();
+        G.addEdge(u, v, p);
+    }
+    G.indexEdges(true);
+
+    auto input = G;
+
+    if (isWeighted()) {
+        G.removeEdgeIf(weightedCondition);
+        G.checkConsistency();
+        input.forEdges([&] (node u, node v, edgeweight w, edgeid id) {
+            if (weightedCondition(u, v, w)) {
+                ASSERT_FALSE(G.hasEdge(u, v));
+            } else {
+                ASSERT_TRUE(G.hasEdge(u, v));
+                ASSERT_EQ(G.weight(u, v), w);
+                ASSERT_EQ(G.edgeId(u, v), id);
+            }
+        });
+    } else {
+        G.removeEdgeIf(unweightedCondition);
+        G.checkConsistency();
+        input.forEdges([&] (node u, node v, edgeweight, edgeid id) {
+            if (unweightedCondition(u, v)) {
+                ASSERT_FALSE(G.hasEdge(u, v));
+            } else {
+                ASSERT_TRUE(G.hasEdge(u, v));
+                ASSERT_EQ(G.edgeId(u, v), id);
+            }
+        });
+    }
+
+    ASSERT_LT(G.numberOfEdges(), input.numberOfEdges());
+    ASSERT_GT(G.numberOfEdges(), 0);
+}
+
 } /* namespace NetworKit */

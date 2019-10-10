@@ -1073,6 +1073,22 @@ public:
     void removeEdgesFromIsolatedSet(const std::vector<node> &nodesInSet);
 
     /**
+     * Iterates over all edges in an arbitrary order and remove those edges for which the
+     * predicate returns true.
+     *
+     * @param predicate  A callable using one of the signatures supported by forEachEdge.
+     *  - The predicate has to be thread-safe (i.e. it may be called from different threads
+     *    concurrently)
+     *  - The return type has to be implicitly convertible to bool.
+     *  - The predicate has to be deterministic, i.e. multiple calls with the same parameters
+     *    have to yield the same result.
+     *  - If the graph is undirected the predicate has to be symmetric, i.e. switching
+     *    both endpoints may not change the result.
+     */
+    template <typename Predicate>
+    void removeEdgeIf(Predicate predicate);
+
+    /**
      * Removes all the edges in the graph.
      */
     void removeAllEdges();
@@ -2172,6 +2188,38 @@ std::pair<count, count> Graph::removeAdjacentEdges(node u, Condition condition, 
     }
 
     return {removedEdges, removedSelfLoops};
+}
+
+template <typename Predicate>
+void Graph::removeEdgeIf(Predicate predicate) {
+    count removedEdges = 0;
+    count removedSelfLoops = 0;
+
+    const auto isDirected = this->isDirected();
+
+    #pragma omp parallel for reduction(+:removedEdges, removedSelfLoops)
+    for (omp_index i = 0; i < static_cast<omp_index>(z); ++i) {
+        const auto u = static_cast<node>(i);
+
+        auto result = removeAdjacentEdges(u, predicate);
+        removedEdges += result.first;
+        removedSelfLoops += result.second;
+
+        if (isDirected) {
+            removeAdjacentEdges(u, predicate, true);
+        }
+    }
+
+    if (!isDirected) {
+        assert(!(removedEdges % 2));
+        removedEdges /= 2;
+    }
+
+    assert(removedEdges <= m);
+    assert(removedSelfLoops <= storedNumberOfSelfLoops);
+
+    m -= removedEdges + removedSelfLoops;
+    storedNumberOfSelfLoops -= removedSelfLoops;
 }
 
 
