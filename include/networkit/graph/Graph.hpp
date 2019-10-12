@@ -653,7 +653,20 @@ public:
      */
     void setEdgeCount(Unsafe, count edges) { m = edges; }
 
+    /**
+     * Set upper bound of edge count.
+     *
+     * @param newBound New upper edge id bound.
+     */
+    void setUpperEdgeIdBound(Unsafe, edgeid newBound) { omega = newBound; }
+
+    /**
+     * Set the number of self-loops.
+     *
+     * @param loops New number of self-loops.
+     */
     void setNumberOfSelfLoops(Unsafe, count loops) { storedNumberOfSelfLoops = loops; }
+
     /**
      * Returns a string representation of the graph.
      * @return A string representation.
