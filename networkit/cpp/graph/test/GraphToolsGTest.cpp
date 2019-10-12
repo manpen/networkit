@@ -17,11 +17,35 @@ class GraphToolsGTest : public testing::TestWithParam<std::tuple<bool, bool>> {
 protected:
     bool isWeighted() const { return std::get<0>(GetParam()); }
     bool isDirected() const { return std::get<1>(GetParam()); }
+
+    Graph createGraph(node n = 0) const;
+    Graph createGraph(node n, count m) const;
 };
 
 INSTANTIATE_TEST_CASE_P(GraphTools, GraphToolsGTest, testing::Values(
     std::make_tuple(false, false), std::make_tuple(true, false),
     std::make_tuple(false, true), std::make_tuple(true, true)), ); // comma required for variadic macro
+
+Graph GraphToolsGTest::createGraph(count n) const {
+    bool weighted, directed;
+    std::tie(weighted, directed) = GetParam();
+    Graph G(n, weighted, directed);
+    return G;
+}
+
+Graph GraphToolsGTest::createGraph(node n, count m) const {
+    auto G = createGraph(n);
+    while(G.numberOfEdges() < m) {
+        const auto u = Aux::Random::index(n);
+        const auto v = Aux::Random::index(n);
+        if (u == v) continue;
+        if (G.hasEdge(u, v)) continue;
+
+        const auto p = Aux::Random::probability();
+        G.addEdge(u, v, p);
+    }
+    return G;
+}
 
 TEST_F(GraphToolsGTest, testGetContinuousOnContinuous) {
     Graph G(10);
@@ -314,20 +338,10 @@ TEST_F(GraphToolsGTest, testGetRemappedGraphWithDelete) {
 
 TEST_P(GraphToolsGTest, testCopyEdgesIf) {
     constexpr node n = 100;
-    constexpr count m = 10 * n;
     Aux::Random::setSeed(41, true);
 
     // generate some random graph
-    Graph randomGraph(n, isWeighted(), isDirected());
-    while(randomGraph.numberOfEdges() < m) {
-        const auto u = Aux::Random::index(n);
-        const auto v = Aux::Random::index(n);
-        if (u == v) continue;
-        if (randomGraph.hasEdge(u, v)) continue;
-
-        const auto p = Aux::Random::probability();
-        randomGraph.addEdge(u, v, p);
-    }
+    Graph randomGraph = createGraph(n, n * 10);
     randomGraph.indexEdges(true);
     randomGraph.removeNode(10);
     //randomGraph.removeNode(20);
@@ -363,5 +377,35 @@ TEST_P(GraphToolsGTest, testCopyEdgesIf) {
     ASSERT_EQ(copiedG.numberOfEdges(), removedG.numberOfEdges());
 }
 
+TEST_P(GraphToolsGTest, testMakeBiKPartite) {
+    constexpr node n = 100;
+    constexpr node classA = 30;
+    Aux::Random::setSeed(40, true);
+
+    // generate some random graph
+    Graph randomGraph = createGraph(n, n * 10);
+    randomGraph.removeNode(5);
+    randomGraph.removeNode(90);
+
+    auto isLegalEdge = [&] (node u, node v) {return (u < classA) != (v < classA);};
+
+    // count number of edges in bipartite graph
+    count numberOfLegalEdges = 0;
+    randomGraph.forEdges([&] (node u, node v) {numberOfLegalEdges += isLegalEdge(u,v);});
+
+    // create bipartite graph using makeBipartite and makeKPartite
+    Graph bipartiteGraph = GraphTools::makeBipartite(randomGraph, classA);
+
+    Partition partition(n);
+    randomGraph.forNodes([&] (node u) {
+       partition[u] = static_cast<index>(u < classA);
+    });
+    Graph kpartiteGraph = GraphTools::makeKPartite(randomGraph, partition);
+
+    ASSERT_GT(numberOfLegalEdges, 0u);
+    ASSERT_GT(randomGraph.numberOfEdges(), numberOfLegalEdges);
+    ASSERT_EQ(bipartiteGraph.numberOfEdges(), numberOfLegalEdges);
+    ASSERT_EQ(kpartiteGraph.numberOfEdges(), numberOfLegalEdges);
+}
 
 } // namespace NetworKit

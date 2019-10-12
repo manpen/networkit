@@ -2,8 +2,11 @@
 #define GRAPHTOOLS_H
 
 #include <unordered_map>
-#include <networkit/graph/Graph.hpp>
+
 #include <tlx/unused.hpp>
+
+#include <networkit/graph/Graph.hpp>
+#include <networkit/structures/Partition.hpp>
 
 namespace NetworKit {
 namespace GraphTools {
@@ -167,6 +170,28 @@ Graph copyEdgesIf(const Graph& input, EdgeHandler handler, bool preallocate = tr
 
     return result;
 }
+
+/**
+ * Returns a bipartite graph with bipartition classes V = A + B where
+ *   A = intersection(V, {0, ..., upperBoundNodeIdInA-1})
+ *   B = intersection(V, {upperBoundNodeIdInA, upperBoundNodeId}).
+ *
+ * If preallocate is set, the process will be faster, but more storage may
+ * be necessary (see copyEdgesIf -> preallocate).
+ *
+ * @note For more versatile (but slower) solution see GraphTools::makeKPartite
+ */
+Graph makeBipartite(const Graph& input, node upperBoundNodeIdInA, bool preallocate = true);
+
+/**
+ * Returns a copy of the input graph without edges between two nodes in the same partition class.
+
+ * If preallocate is set, the process will be faster, but more storage may
+ * be necessary (see copyEdgesIf -> preallocate).
+ *
+ * @note To generate a bipartion of contigous nodes, prefer that fast GraphTools::makeBipartite.
+ */
+Graph makeKPartite(const Graph& input, const Partition& partition, bool preallocate = true);
 
 }	// namespace GraphTools
 }	// namespace NetworKit

@@ -74,5 +74,20 @@ Graph restoreGraph(const std::vector<node>& invertedIdMap, const Graph& G) {
     return Goriginal;
 }
 
+Graph makeBipartite(const NetworKit::Graph &input, NetworKit::node upperBoundNodeIdInA, bool preallocate) {
+    return copyEdgesIf(input, [=] (node u, node v) {
+        const auto uBelongsToA = (u < upperBoundNodeIdInA);
+        const auto vBelongsToA = (v < upperBoundNodeIdInA);
+        return uBelongsToA != vBelongsToA;
+    }, preallocate);
+}
+
+Graph makeKPartite(const Graph& input, const Partition& partition, bool preallocate) {
+    assert(partition.numberOfElements() == input.upperNodeIdBound());
+    return copyEdgesIf(input, [=] (node u, node v) {
+        return partition[u] != partition[v];
+    }, preallocate);
+}
+
 } // namespace GraphTools
 } // namespace NetworKit
