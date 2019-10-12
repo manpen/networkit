@@ -233,15 +233,19 @@ void Graph::indexEdges(bool force) {
     if (edgesIndexed && !force)
         return;
 
+    edgesIndexed = true;
     omega = 0; // reset edge ids (for re-indexing)
 
     outEdgeIds.resize(outEdges.size());
-    forNodes([&](node u) { outEdgeIds[u].resize(outEdges[u].size(), none); });
-
-    if (directed) {
+    if (directed)
         inEdgeIds.resize(inEdges.size());
+
+    if (!numberOfEdges())
+        return;
+
+    forNodes([&](node u) { outEdgeIds[u].resize(outEdges[u].size(), none); });
+    if (directed)
         forNodes([&](node u) { inEdgeIds[u].resize(inEdges[u].size(), none); });
-    }
 
     // assign edge ids for edges in one direction
     forNodes([&](node u) {
@@ -279,9 +283,6 @@ void Graph::indexEdges(bool force) {
             }
         });
     }
-
-    edgesIndexed = true; // remember that edges have been indexed so that addEdge
-                         // needs to create edge ids
 }
 
 edgeid Graph::edgeId(node u, node v) const {
@@ -1142,11 +1143,9 @@ Graph Graph::transpose() const {
     Graph GTranspose(z, weighted, true);
 
     // prepare edge id storage if input has indexed edges
-    GTranspose.edgesIndexed = edgesIndexed;
-    GTranspose.omega = omega;
     if (edgesIndexed) {
-        GTranspose.inEdgeIds.resize(z);
-        GTranspose.outEdgeIds.resize(z);
+        GTranspose.indexEdges();
+        GTranspose.omega = omega;
     }
 
     #pragma omp parallel for
