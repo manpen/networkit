@@ -771,6 +771,9 @@ void Graph::removeEdge(node u, node v) {
     if (weighted) {
         erase<edgeweight>(u, vi, outEdgeWeights);
     }
+    if (edgesIndexed) {
+        erase(u, vi, outEdgeIds);
+    }
 
     if (directed) {
         assert(ui != none);
@@ -779,11 +782,17 @@ void Graph::removeEdge(node u, node v) {
         if (weighted) {
             erase<edgeweight>(v, ui, inEdgeWeights);
         }
+        if (edgesIndexed) {
+            erase(v, ui, inEdgeIds);
+        }
     } else if (u != v) {
         // undirected, not self-loop
         erase<node>(v, ui, outEdges);
         if (weighted) {
             erase<edgeweight>(v, ui, outEdgeWeights);
+        }
+        if (edgesIndexed) {
+            erase(v, ui, outEdgeIds);
         }
     }
 
@@ -803,10 +812,16 @@ void Graph::removeAllEdges() {
         if (isWeighted()) {
             outEdgeWeights[u].clear();
         }
+        if (edgesIndexed) {
+            outEdgeIds[u].clear();
+        }
         if (isDirected()) {
             inEdges[u].clear();
             if (isWeighted()) {
                 inEdgeWeights[u].clear();
+            }
+            if (edgesIndexed) {
+                inEdgeIds[u].clear();
             }
         }
     }
@@ -819,11 +834,20 @@ void Graph::removeEdgesFromIsolatedSet(const std::vector<node> &nodesInSet) {
     for (node u : nodesInSet) {
         removedEdges += outEdges[u].size();
         outEdges[u].clear();
-        if (this->weighted) {
+        if (weighted) {
             outEdgeWeights[u].clear();
         }
-        if (this->isDirected()) {
+        if (edgesIndexed) {
+            outEdgeIds[u].clear();
+        }
+        if (directed) {
             inEdges[u].clear();
+            if (weighted) {
+                inEdgeWeights[u].clear();
+            }
+            if (edgesIndexed) {
+                inEdgeIds[u].clear();
+            }
         }
     }
     this->m -= removedEdges;
