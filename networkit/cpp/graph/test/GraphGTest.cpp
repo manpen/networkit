@@ -40,7 +40,8 @@ protected:
 
     bool isWeighted() const;
     bool isDirected() const;
-    Graph createGraph(count n = 0) const;
+    Graph createGraph(node n = 0) const;
+    Graph createGraph(node n, count m) const;
     count countSelfLoopsManually(const Graph &G);
 };
 
@@ -56,6 +57,20 @@ Graph GraphGTest::createGraph(count n) const {
     bool weighted, directed;
     std::tie(weighted, directed) = GetParam();
     Graph G(n, weighted, directed);
+    return G;
+}
+
+Graph GraphGTest::createGraph(node n, count m) const {
+    auto G = createGraph(n);
+    while(G.numberOfEdges() < m) {
+        const auto u = Aux::Random::index(n);
+        const auto v = Aux::Random::index(n);
+        if (u == v) continue;
+        if (G.hasEdge(u, v)) continue;
+
+        const auto p = Aux::Random::probability();
+        G.addEdge(u, v, p);
+    }
     return G;
 }
 
@@ -2159,53 +2174,6 @@ TEST_P(GraphGTest, testForWeightedEdgesWithIds) {
     }
 }
 
-/*TEST_P(GraphGTest, testInForEdgesUndirected) {
-  METISGraphReader reader;
-  Graph G = reader.read("input/PGPgiantcompo.graph");
-  DEBUG(G.upperNodeIdBound());
-  node u = 5474;
-  G.forInEdgesOf(u, [&](node u, node z, edgeweight w){
-    DEBUG("(1) node: ", u, " neigh:", z, " weight: ", w);
-  });
-  G.forEdgesOf(u, [&](node u, node z, edgeweight w){
-    DEBUG("(2) node: ", u, " neigh:", z, " weight: ", w);
-  });
-
-
-  node source = 1492;
-  DynBFS bfs(G, source, false);
-  bfs.run();
-
-  std::vector<std::pair<node, double> > choices1;
-  G.forInEdgesOf(5474, [&](node t, node z, edgeweight w){
-    INFO("considered edge (1): ", t, z, w);
-    if (Aux::NumericTools::logically_equal(bfs.distance(t), bfs.distance(z) +
-w)) {
-      // workaround for integer overflow in large graphs
-      bigfloat tmp = bfs.getNumberOfPaths(z) / bfs.getNumberOfPaths(t);
-      double weight;
-      tmp.ToDouble(weight);
-      choices1.emplace_back(z, weight);
-    }
-  });
-  std::vector<std::pair<node, double> > choices2;
-  G.forEdgesOf(5474, [&](node t, node z, edgeweight w){
-    INFO("considered edge (2): ", t, z, w);
-    if (Aux::NumericTools::logically_equal(bfs.distance(t), bfs.distance(z) +
-w)) {
-      // workaround for integer overflow in large graphs
-      bigfloat tmp = bfs.getNumberOfPaths(z) / bfs.getNumberOfPaths(t);
-      double weight;
-      tmp.ToDouble(weight);
-      choices2.emplace_back(z, weight);
-    }
-  });
-
-  INFO(choices1);
-  INFO(choices2);
-}
-*/
-
 TEST_P(GraphGTest, testCompactEdges) {
     Graph G = this->Ghouse;
     G.indexEdges();
@@ -2445,23 +2413,12 @@ TEST_P(GraphGTest, testRemoveMultiEdges) {
 
 TEST_P(GraphGTest, testRemoveEdgeIf) {
     constexpr node n = 100;
-    constexpr count m = 10 * n;
-
-    Aux::Random::setSeed(42, true);
-    Graph G(n, isWeighted(), isDirected());
 
     auto weightedCondition   = []  (node, node, edgeweight w) { return w > 0.5; };
     auto unweightedCondition = [] (node u, node v) {return (u < n/2) == (v < n/2);};
 
-    while(G.numberOfEdges() < m) {
-        const auto u = Aux::Random::index(n);
-        const auto v = Aux::Random::index(n);
-        if (u == v) continue;
-        if (G.hasEdge(u, v)) continue;
-
-        const auto p = Aux::Random::probability();
-        G.addEdge(u, v, p);
-    }
+    Aux::Random::setSeed(42, true);
+    auto G = createGraph(n, 10*n);
     G.indexEdges(true);
 
     auto input = G;
@@ -2493,6 +2450,37 @@ TEST_P(GraphGTest, testRemoveEdgeIf) {
 
     ASSERT_LT(G.numberOfEdges(), input.numberOfEdges());
     ASSERT_GT(G.numberOfEdges(), 0);
+}
+
+TEST_P(GraphGTest, testEdgeIdsAfterRemove) {
+    constexpr node n = 100;
+
+    Aux::Random::setSeed(42, true);
+    auto G = createGraph(n, 10*n);
+    G.indexEdges();
+    auto original = G;
+
+    // remove some nodes and edges
+    G.removeNode(5);
+    G.removeNode(10);
+    while(2*G.numberOfEdges() > original.numberOfEdges()) {
+        auto e = G.randomEdge(false);
+        G.removeEdge(e.first, e.second);
+    }
+    ASSERT_GT(G.numberOfEdges(), original.numberOfEdges() / 3);
+
+    // check that the remaining edges still have the same ids
+    G.forNodes([&] (node u) {
+        G.forNeighborsOf(u, [&] (node, node v, edgeweight, edgeid id) {
+            ASSERT_EQ(id, original.edgeId(u, v));
+        });
+
+        if (!isDirected()) return;
+
+        G.forInNeighborsOf(u, [&] (node, node v, edgeweight, edgeid id) {
+            ASSERT_EQ(id, original.edgeId(v, u));
+        });
+    });
 }
 
 } /* namespace NetworKit */
