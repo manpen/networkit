@@ -103,6 +103,70 @@ Graph getRemappedGraph(const Graph& graph, count numNodes, UnaryIdMapper&& oldId
         std::forward<UnaryIdMapper>(oldIdToNew), [](node) { return false; }, preallocate);
 }
 
+/**
+ * Creates a copy of the input graph but only includes those edges for which the
+ * provided EdgeHandler returns true. The EdgeHandler supports the usual Graph.forEdge*
+ * signatures.
+ * If preallocate = true, each node will preallocate sufficent storage to for all neighbors
+ * in the input graph. This wastes memory if a significant fraction of edges will be dropped.
+ */
+template <typename EdgeHandler>
+Graph copyEdgesIf(const Graph& input, EdgeHandler handler, bool preallocate = true) {
+    auto result = input.copyNodes();
+
+    count numberOfEdges{0};
+    count numberOfSelfloops{0};
+    const auto isDirected = input.isDirected();
+
+    if (input.hasEdgeIds())
+        result.indexEdges();
+
+    #pragma omp parallel for reduction(+: numberOfEdges, numberOfSelfloops)
+    for(omp_index ui=0; ui < static_cast<omp_index>(input.upperNodeIdBound()); ++ui) {
+        const auto u = static_cast<node>(ui);
+
+        if (!input.hasNode(u)) {
+            continue;
+        }
+
+        if (preallocate) {
+            if (isDirected) {
+                result.preallocateDirected(u, input.degreeOut(u), input.degreeIn(u));
+            } else {
+                result.preallocateUndirected(u, input.degree(u));
+            }
+        }
+
+        input.forNeighborsOf(u, [&] (node u, node v, edgeweight w, edgeid id) {
+            if (!GraphDetails::callEdgeHandler(handler, u, v, w, id))
+                return;
+
+            numberOfEdges++;
+            numberOfSelfloops += (u == v);
+            result.addPartialOutEdge(unsafe, u, v, w, id);
+        });
+
+        if (isDirected) {
+            input.forInNeighborsOf(u, [&] (node u, node v, edgeweight w, edgeid id) {
+                if (!GraphDetails::callEdgeHandler(handler, v, u, w, id)) // callback swapped v, u
+                    return;
+
+                result.addPartialInEdge(unsafe, u, v, w, id);
+            });
+        }
+    }
+
+    if (!isDirected) {
+        assert(numberOfEdges % 2 == 0);
+        numberOfEdges /= 2;
+    }
+
+    result.setEdgeCount(unsafe, numberOfEdges);
+    result.setNumberOfSelfLoops(unsafe, numberOfSelfloops);
+    result.setUpperEdgeIdBound(unsafe, input.upperEdgeIdBound());
+
+    return result;
+}
 
 }	// namespace GraphTools
 }	// namespace NetworKit

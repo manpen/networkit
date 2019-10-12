@@ -12,7 +12,16 @@
 
 namespace NetworKit {
 
-class GraphToolsGTest: public testing::Test {};
+class GraphToolsGTest : public testing::TestWithParam<std::tuple<bool, bool>> {
+
+protected:
+    bool isWeighted() const { return std::get<0>(GetParam()); }
+    bool isDirected() const { return std::get<1>(GetParam()); }
+};
+
+INSTANTIATE_TEST_CASE_P(GraphTools, GraphToolsGTest, testing::Values(
+    std::make_tuple(false, false), std::make_tuple(true, false),
+    std::make_tuple(false, true), std::make_tuple(true, true)), ); // comma required for variadic macro
 
 TEST_F(GraphToolsGTest, testGetContinuousOnContinuous) {
     Graph G(10);
@@ -302,5 +311,57 @@ TEST_F(GraphToolsGTest, testGetRemappedGraphWithDelete) {
         }
     }
 }
+
+TEST_P(GraphToolsGTest, testCopyEdgesIf) {
+    constexpr node n = 100;
+    constexpr count m = 10 * n;
+    Aux::Random::setSeed(41, true);
+
+    // generate some random graph
+    Graph randomGraph(n, isWeighted(), isDirected());
+    while(randomGraph.numberOfEdges() < m) {
+        const auto u = Aux::Random::index(n);
+        const auto v = Aux::Random::index(n);
+        if (u == v) continue;
+        if (randomGraph.hasEdge(u, v)) continue;
+
+        const auto p = Aux::Random::probability();
+        randomGraph.addEdge(u, v, p);
+    }
+    randomGraph.indexEdges(true);
+    randomGraph.removeNode(10);
+    //randomGraph.removeNode(20);
+
+    // copy edges
+    auto keepCondition  = [&] (node u, node v, edgeweight w) {
+        if (isWeighted())
+            return w > 0.5;
+        return (u < n/2) == (v < n/2);
+    };
+    auto removeCondition = [&] (node u, node v, edgeweight w) {
+        return ! keepCondition(u, v, w);
+    };
+
+    auto copiedG = GraphTools::copyEdgesIf(randomGraph, keepCondition);
+    auto removedG = randomGraph;
+    removedG.removeEdgeIf(removeCondition);
+
+    copiedG.checkConsistency();
+    removedG.forEdges([&] (node u, node v, edgeweight w, edgeid id) {
+        if (removeCondition(u, v, w)) {
+            ASSERT_FALSE(copiedG.hasEdge(u, v));
+        } else {
+            ASSERT_TRUE(copiedG.hasEdge(u, v));
+            ASSERT_EQ(copiedG.weight(u, v), w);
+            ASSERT_EQ(copiedG.edgeId(u, v), id);
+        }
+    });
+
+    //ASSERT_LT(copiedG.numberOfNodes(), randomGraph.upperNodeIdBound());
+    ASSERT_EQ(copiedG.upperNodeIdBound(), randomGraph.upperNodeIdBound());
+    ASSERT_EQ(copiedG.numberOfNodes(), removedG.numberOfNodes());
+    ASSERT_EQ(copiedG.numberOfEdges(), removedG.numberOfEdges());
+}
+
 
 } // namespace NetworKit
