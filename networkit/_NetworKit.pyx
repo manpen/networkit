@@ -4893,6 +4893,8 @@ cdef extern from "<networkit/graph/GraphTools.hpp>" namespace "NetworKit::GraphT
 	_Graph getCompactedGraph(_Graph G, unordered_map[node,node]) nogil except +
 	unordered_map[node,node] getContinuousNodeIds(_Graph G) nogil except +
 	unordered_map[node,node] getRandomContinuousNodeIds(_Graph G) nogil except +
+	_Graph makeBipartite(_Graph G, node upperBoundNodeIdInA) nogil except +
+	_Graph makeKPartite(_Graph G, _Partition partition) nogil except +
 
 cdef class GraphTools:
 	@staticmethod
@@ -4958,6 +4960,22 @@ cdef class GraphTools:
 		for elem in cResult:
 			result[elem.first] = elem.second
 		return result
+
+	@staticmethod
+	def makeBipartite(Graph graph, node upperBoundNodeIdInA):
+		"""
+		Returns a bipartite graph with bipartition classes V = A + B where
+		 *   A = intersection(V, {0, ..., upperBoundNodeIdInA-1})
+		 *   B = intersection(V, {upperBoundNodeIdInA, upperBoundNodeId}).
+ 		"""
+		return Graph().setThis(makeBipartite(graph._this, upperBoundNodeIdInA))
+
+	@staticmethod
+	def makeKPartite(Graph graph, Partition partition):
+		"""
+		Returns a copy of the input graph without edges between two nodes in the same partition class.
+		"""
+		return Graph().setThis(makeKPartite(graph._this, partition._this))
 
 
 cdef extern from "<networkit/community/PartitionIntersection.hpp>":
