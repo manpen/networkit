@@ -70,6 +70,12 @@ public:
 
     bool isParallel() const final { return true; }
 
+    static Graph shuffleGraph(const Graph &input) {
+        DegreePreservingShuffle algo(input);
+        algo.run();
+        return algo.getGraph();
+    }
+
 private:
     const Graph *G;
     std::vector<node> permutation;
