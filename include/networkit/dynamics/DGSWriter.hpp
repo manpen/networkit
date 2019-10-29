@@ -8,6 +8,9 @@
 #ifndef DGSWRITER_H_
 #define DGSWRITER_H_
 
+#include <string>
+#include <vector>
+
 #include <networkit/dynamics/GraphEvent.hpp>
 
 namespace NetworKit {
@@ -19,7 +22,7 @@ class DGSWriter {
 public:
     DGSWriter() = default;
 
-    void write(std::vector<GraphEvent>& stream, std::string path);
+    void write(std::vector<GraphEvent>& stream, const std::string& path);
 
 };
 
