@@ -20,6 +20,10 @@ def findClangFormat():
     allowed = ["clang-format" + x for x in ["-9", "-8", "-7", ""]]
     for candidate in allowed:
         if not shutil.which(candidate) is None:
+            if nkt.isVerbose():
+                version = str(subprocess.check_output([candidate, "--version"], universal_newlines=True)).strip()
+                print("clang-format: %s\n -> Version: %s" % (candidate, version))
+
             return candidate
 
     raise "clang-format binary not found. We searched for:\n " + "\n ".join(allowed)
@@ -34,6 +38,12 @@ def runClangFormat(inputFilename, outputFilename, clangFormatBinary = 'clang-for
     with open(outputFilename, "w") as outfile:
         subprocess.call([clangFormatBinary, '-style=file', inputFilename], stdout=outfile)
 
+def computeDiff(originalFilename, formatedFilename):
+    """Compute a colorful diff between the original file and the formatted one"""
+    p = subprocess.Popen(["diff", "-a", "--color=always", originalFilename, formatedFilename],
+                         stdout=subprocess.PIPE, stderr=subprocess.PIPE, bufsize=-1)
+    output, _ = p.communicate()
+    return output
 
 nkt.setup()
 
@@ -56,10 +66,17 @@ with tempfile.TemporaryDirectory(dir=nkt.getNetworKitRoot()) as tempDir:
 
         if not filecmp.cmp(file, tempFile, shallow=False):
             numberNonCompliant += 1
-            if not nkt.isReadonly():
-                os.replace(tempFile, file)
-
             nkt.reportChange(file + " is non-compliant")
+
+            if nkt.isReadonly():
+                if nkt.isVerbose():
+                    diff = computeDiff(file, tempFile)
+                    print("-" * 20, "Begin of diff", "-" * 20)
+                    sys.stdout.buffer.write(diff)
+                    print("-" * 21, "End of diff", "-" * 21)
+
+            else:
+                os.replace(tempFile, file)
 
 print("Scanned %d files (skipped %d files without subscription). Non-compliant files: %d." %
       (len(files), numberFileSkipped, numberNonCompliant))

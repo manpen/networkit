@@ -4,6 +4,7 @@ import sys
 import tempfile
 
 READONLY = True
+VERBOSE = False
 
 def setup(args = None):
 	"""
@@ -20,12 +21,21 @@ def setup(args = None):
 	global READONLY
 	READONLY = not ("-w" in args)
 
+	global VERBOSE
+	VERBOSE = ("-v" in args)
+
 def isReadonly():
 	"""
 	Returns whether module is in read-only mode (default: True).
 	In this case, FileRewriter.commit is silently deactivated.
 	"""
 	return READONLY
+
+def isVerbose():
+	"""
+	Returns whether user requested verbose output (default: False).
+	"""
+	return VERBOSE
 
 def reportChange(msg):
 	"""
