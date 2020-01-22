@@ -57,15 +57,15 @@ public:
     bool isParallel() const override { return false; }
 
 private:
-    Graph inputGraph;
-    std::vector<node> bipartitionClass;
+    const Graph& inputGraph;
+    const std::vector<node>& bipartitionClass;
     unsigned numGlobalTrades;
 
     std::vector<std::vector<node>> adjList;
 
     void buildAdjList();
 
-
+    // TODO: Ja, bitte! Und gebe ihr bitte einen generischen Namen wie compute_common_disjoint
     //hier die hilfsfunktionen rein oder nicht?
     //void common_disjoint_sortsort();
 };

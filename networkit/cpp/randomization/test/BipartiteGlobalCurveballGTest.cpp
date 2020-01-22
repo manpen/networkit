@@ -7,9 +7,9 @@ namespace NetworKit {
 
 class CurveballUniformTradeGeneratorGTest : public ::testing::Test {};
 
-enum class CreateType { zufall, bijektiv, Default };
+enum class CreateType { zufall, bijektiv, Default }; // TODO: ENGLISH ;)
 
-template <CreateType CType>
+template <CreateType CType> // TODO: Make it argument
 static Graph create_random_bipartite_Graph(node n, node part_size, std::vector<node> &partition) {
     Graph graph(n, false, false);
 
@@ -21,15 +21,15 @@ static Graph create_random_bipartite_Graph(node n, node part_size, std::vector<n
     }
 
     std::random_device rd;
-    std::mt19937_64 prng(rd());
+    std::mt19937_64 prng(rd()); // TODO: Immer feste Seeds verwenden prng(1);
 
-    std::uniform_int_distribution<node> dis;
+    std::uniform_int_distribution<node> dis(a, b); // a <= dis(prng) <= b !
 
     if (CType == CreateType::zufall) {
         for (node u = 0; u < part_size; ++u) {
             partition.push_back(u);
             std::shuffle(second_part.begin(), second_part.end(), prng);
-            node count = (dis(prng) % (second_part.size() - 1)) + 1;
+            node count = (dis(prng) % (second_part.size() - 1)) + 1; // TODO: NE!
 
             for (node i = 0; i < count; ++i) {
                 graph.addEdge(u, second_part[i]);
@@ -84,11 +84,6 @@ TEST_F(CurveballUniformTradeGeneratorGTest, testNoop) {
     bool changes = false;
     graphIn.forEdges([&](node u, node v) {
         if (!graphOut.hasEdge(u, v)) {
-            changes = true;
-        }
-    });
-    graphOut.forEdges([&](node u, node v) {
-        if (!graphIn.hasEdge(u, v)) {
             changes = true;
         }
     });

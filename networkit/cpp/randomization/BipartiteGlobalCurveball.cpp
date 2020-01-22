@@ -1,15 +1,18 @@
 // networkit-format
 #include <cassert>
 
-#include <networkit/graph/GraphBuilder.hpp>
 #include <networkit/randomization/BipartiteGlobalCurveball.hpp>
 
-// darf ich das?
 #include <tlx/algorithm/random_bipartition_shuffle.hpp>
 #include <networkit/graph/GraphTools.hpp>
 
+// TODO: Header hinzugefügt
+#include <networkit/auxiliary/Random.hpp>
+
+
 namespace NetworKit {
 
+// TODO: we schon im Header angemerkt: bitte keine neuen Methoden im NetworKit-Namespace
 static void common_disjoint_sortsort(std::vector<node> &neighbourhood_of_u,
                                      std::vector<node> &neighbourhood_of_v,
                                      std::vector<node> &common_neighbours,
@@ -57,7 +60,8 @@ static void trade(std::vector<node> &common, std::vector<node> &disjoint,
                   std::mt19937_64 &prng) {
 
     // ANNAHME: u ist der größere Vektor!
-    // evtl Umbauen, mit Fallunterscheidung?
+    // evtl Umbauen, mit Fallunterscheidung? // TODO: ?
+
 
     // tausche die Elemente in disjoint, aber nur so dass die erste partition zufällig ist, rest
     // egal
@@ -85,14 +89,36 @@ void BipartiteGlobalCurveball::run(count numberOfGlobalTrades) {
     }
 
     // wohin hiermit? gibts da probleme mit der parallelität?
+    // TODO: Ich würde folgendes vorschlagen:
+/*
+ *  #pragma omp parallel
+ *  {
+ *    auto& prng = Aux::Random::getURNG(); // TODO: Wichtig: auto& nicht auto!
+ *    std::vector<node> common, disjoint;
+ *
+ *    std::iota
+ *
+ *    for(round) {
+ *      #pragma omp single
+ *      { shuffle }
+ *
+ *      #pragma omp barrier ??????
+ *
+ *      #pragma omp for
+ *      for(i) ...
+ *    }
+ *  }
+ */
+
+
     std::random_device rd;
     std::mt19937_64 prng(rd());
 
     for (count round = 0; round < numberOfGlobalTrades; ++round) {
 
         // Permutationsvektor erstellen:
-        std::vector<node> perm;
-        for (node i = 0; i < adjList.size(); ++i) {
+        std::vector<node> perm; // TODO: Das sollte VOR for(round) stehen; ein shuffle eines shuffles ist immer noch ein shuffle ;)
+        for (node i = 0; i < adjList.size(); ++i) { // TODO: std::iota
             perm.push_back(i);
         }
 
@@ -102,22 +128,28 @@ void BipartiteGlobalCurveball::run(count numberOfGlobalTrades) {
         {
             // allok
             std::vector<node> common, disjoint;
-            // maxDegree() ist deprecated
-            int maxGrad = NetworKit::GraphTools::maxDegree(inputGraph);
+            const auto maxGrad = NetworKit::GraphTools::maxDegree(inputGraph); // TODO: English
 
             disjoint.reserve(2 * maxGrad);
             common.reserve(2 * maxGrad);
 
+            // TODO: Nutze immer den engsten Scope; u,v werden nur IN der for-schleife benötigt
             std::vector<node> *u;
             std::vector<node> *v;
 
+            const auto n = static_cast<omp_index>(adjList.size() - 1);
 #pragma omp for
-            for (size_t i = 0; i < adjList.size() - 1; i += 2) {
+            // TODO: Evtl. ist #pragma omp for schedule(dynamic, 128) -- chuck size = 128 is a guess; may want to check it
+            for (omp_index i = 0; i < n; i += 2) {
                 common.clear();
                 disjoint.clear();
 
                 // ich bin mir nicht sicher ob man das so macht mit den adressen und pointern für
                 // u,v...
+
+                // TODO: Der C++-Style wäre `auto u = std::next(adjList.begin(), perm[i]);`
+                //  was hier equivalent zu  `auto u = adjList.begin() + perm[i];` ist.
+                // TODO: ABER: noch besser, nutze einfach eine Referenz: auto& u = adjList[perm[i]];
                 u = &adjList[perm[i]];
                 v = &adjList[perm[i + 1]];
 
@@ -126,7 +158,7 @@ void BipartiteGlobalCurveball::run(count numberOfGlobalTrades) {
                 // u.clear();
                 // v.clear();
 
-                if ((*u).size() >= (*v).size()) {
+                if ((*u).size() >= (*v).size()) { // TODO: Da (*x).foo nervig zu schreiben ist, hat schon C: x->foo
                     NetworKit::trade(common, disjoint, *u, *v, prng);
                 } else {
                     NetworKit::trade(common, disjoint, *v, *u, prng);
@@ -165,7 +197,7 @@ Graph BipartiteGlobalCurveball::getGraph() {
     }
 
     node i = 0;
-    for (auto &vs : adjList) {
+    for (const auto &vs : adjList) {
         const auto u = bipartitionClass[i++];
         for (auto v : vs) {
             graph.addEdge(u, v);
