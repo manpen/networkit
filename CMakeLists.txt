@@ -23,6 +23,8 @@ set(NETWORKIT_WITH_SANITIZERS "" CACHE STRING "Uses sanitizers during the compil
 set(NETWORKIT_RELEASE_LOGGING "AUTO" CACHE STRING "Do not compile log messages at levels TRACE or DEBUG (AUTO|ON|OFF)")
 set(NETWORKIT_PYTHON_RPATH "" CACHE STRING "Build specific rpath references.")
 set(NETWORKIT_EXT_TLX "" CACHE STRING "Absolute path for external tlx-library. If not set, extlibs/tlx is used")
+set(NETWORKIT_EXT_RANGE_V3 "" CACHE STRING "Absolute path for external tlx-library. If not set, extlibs/range-v3 is used")
+
 
 set (NETWORKIT_CXX_STANDARD "14" CACHE STRING "CXX Version to compile with. Currently fixed to 14")
 
@@ -211,6 +213,22 @@ else()
 endif()
 
 ################################################################################
+# Use TLX as a CMake submodule
+if(NOT NETWORKIT_EXT_RANGE_V3)
+	if(EXISTS "${PROJECT_SOURCE_DIR}/extlibs/range-v3/CMakeLists.txt")
+		add_subdirectory(extlibs/range-v3)
+	else()
+		message(FATAL_ERROR
+				"Missing Range-V3 library in extlibs/range-v3 "
+				"Please run `git submodule update --init` to fetch the submodule.")
+	endif()
+else()
+	add_library(range-v3 STATIC IMPORTED)
+	set_target_properties(range-v3 PROPERTIES
+			INTERFACE_INCLUDE_DIRECTORIES "${NETWORKIT_EXT_RANGE_V3}/include/")
+endif()
+
+################################################################################
 # NETWORKIT MODULES
 if(NETWORKIT_BUILD_CORE AND NETWORKIT_MONOLITH)
 	if(NETWORKIT_STATIC)
@@ -228,7 +246,7 @@ if(NETWORKIT_BUILD_CORE AND NETWORKIT_MONOLITH)
 			LIBRARY DESTINATION ${NETWORKIT_LIB_DEST}
 			ARCHIVE DESTINATION ${NETWORKIT_LIB_DEST})
 
-	target_link_libraries(networkit PRIVATE OpenMP::OpenMP_CXX PUBLIC tlx)
+	target_link_libraries(networkit PRIVATE OpenMP::OpenMP_CXX PUBLIC tlx range-v3)
 	target_include_directories(networkit BEFORE PUBLIC "${PROJECT_SOURCE_DIR}/include")
 	target_include_directories(networkit PUBLIC "${PROJECT_SOURCE_DIR}/extlibs/ttmath/")
 endif()
@@ -292,7 +310,7 @@ if(NETWORKIT_PYTHON)
 			endif()
 		endif()
 
-	target_link_libraries(${TARGET_LIB} PRIVATE OpenMP::OpenMP_CXX PUBLIC tlx)
+	target_link_libraries(${TARGET_LIB} PRIVATE OpenMP::OpenMP_CXX PUBLIC tlx range-v3)
 		if(${TARGET_LIB} STREQUAL stat)
 			install(TARGETS ${TARGET_LIB}
 				LIBRARY DESTINATION "${NETWORKIT_LIB_DEST}/networkit/profiling")
@@ -325,7 +343,7 @@ function(networkit_add_module modname)
 			COMPILE_FLAGS "${NETWORKIT_CXX_FLAGS}"
 			LINK_FLAGS "${NETWORKIT_LINK_FLAGS}")
 
-		target_link_libraries(${MODULE_TARGET} PRIVATE OpenMP::OpenMP_CXX PUBLIC tlx)
+		target_link_libraries(${MODULE_TARGET} PRIVATE OpenMP::OpenMP_CXX PUBLIC tlx range-v3)
 		target_include_directories(${MODULE_TARGET} BEFORE PUBLIC "${PROJECT_SOURCE_DIR}/include")
 		target_include_directories(${MODULE_TARGET} PUBLIC "${PROJECT_SOURCE_DIR}/extlibs/ttmath/")
 
@@ -414,6 +432,7 @@ if (NETWORKIT_BUILD_TESTS)
 				gtest
 				networkit
 				tlx
+				range-v3
 				OpenMP::OpenMP_CXX
 		)
 
@@ -447,6 +466,7 @@ if (NETWORKIT_BUILD_TESTS)
 					gtest
 				PRIVATE
 					tlx
+					range-v3
 					networkit_auxiliary
 					OpenMP::OpenMP_CXX
 		)
@@ -482,6 +502,7 @@ function(networkit_add_extra IS_TEST MOD NAME)
 				PRIVATE
 					networkit_${MOD}
 					tlx
+					range-v3
 					OpenMP::OpenMP_CXX
 					)
 			set_target_properties(${TARGET_NAME} PROPERTIES
