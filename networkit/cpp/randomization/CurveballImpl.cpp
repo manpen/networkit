@@ -9,10 +9,13 @@
 #include <numeric>
 #include <vector>
 
+#include <range/v3/all.hpp>
+
 #include "CurveballImpl.hpp"
 #include <tlx/algorithm/random_bipartition_shuffle.hpp>
 #include <networkit/auxiliary/SignalHandling.hpp>
-#include <networkit/auxiliary/Timer.hpp>
+
+#include "trades/PermutationTrade.hpp"
 
 namespace NetworKit {
 namespace CurveballDetails {
@@ -397,6 +400,8 @@ void CurveballIM::run(const trade_vector &trades) {
 
     auto &urng = Aux::Random::getURNG();
 
+    Trades::RandomPerumation trader(maxDegree);
+
     for (const auto &trade : trades) {
         handler.assureRunning();
 
@@ -404,112 +409,42 @@ void CurveballIM::run(const trade_vector &trades) {
         const node u = trade.first;
         const node v = trade.second;
 
-        numAffectedEdges += adjList.degreeAt(u);
-        numAffectedEdges += adjList.degreeAt(v);
+        numAffectedEdges += adjList.degreeAt(u) + adjList.degreeAt(v);
 
         // Shift the tradeList offset for these two, currently was set to
         // trade_count
         tradeList.incrementOffset(u);
         tradeList.incrementOffset(v);
 
-        // Retrieve respective neighbours
-        // we return whether u has v in his neighbors or vice-versa
-        auto organize_neighbors = [&](node node_x, node node_y) {
-            auto pos = std::find(adjList.begin(node_x), adjList.end(node_x), node_y);
-            if (pos == adjList.cend(node_x)) {
-                // element not found, sort anyway
-                std::sort(adjList.begin(node_x), adjList.end(node_x));
+        const tradeid tu = *(tradeList.getTrades(u));
+        const tradeid tv = *(tradeList.getTrades(v));
 
-                return false;
-            } else {
-                // overwrite node_y's position with END
-                *pos = LISTROW_END;
+        ranges::sort(adjList.range(u));
+        ranges::sort(adjList.range(v));
 
-                // sort, such that node_y's position is at end - 1
-                std::sort(adjList.begin(node_x), adjList.end(node_x));
+        trader.run(u, adjList.range(u), v, adjList.range(v), urng);
 
-                // overwrite with node_y again
-                *(adjList.end(node_x) - 1) = node_y;
-
-                return true;
-            }
-        };
-
-        const bool u_share = organize_neighbors(u, v);
-        const bool v_share = organize_neighbors(v, u);
-        auto u_end = (u_share ? adjList.cend(u) - 1 : adjList.cend(u));
-        auto v_end = (v_share ? adjList.cend(v) - 1 : adjList.cend(v));
-
-        const bool shared = u_share || v_share;
-
-        // both can't have each other, only inserted in one
-        assert((!u_share && !v_share) || (u_share != v_share));
-
-        // No need to keep track of direct positions
-        // Get common and disjoint neighbors
-        // Here sort and parallel scan
-        common_neighbours.clear();
-        disjoint_neighbours.clear();
-        auto u_nit = adjList.cbegin(u);
-        auto v_nit = adjList.cbegin(v);
-        while ((u_nit != u_end) && (v_nit != v_end)) {
-            assert(*u_nit != v);
-            assert(*v_nit != u);
-            if (*u_nit > *v_nit) {
-                disjoint_neighbours.push_back(*v_nit);
-                v_nit++;
-                continue;
-            }
-            if (*u_nit < *v_nit) {
-                disjoint_neighbours.push_back(*u_nit);
-                u_nit++;
-                continue;
-            }
-            // *u_nit == *v_nit
-            {
-                common_neighbours.push_back(*u_nit);
-                u_nit++;
-                v_nit++;
-            }
-        }
-        if (u_nit == u_end)
-            disjoint_neighbours.insert(disjoint_neighbours.end(), v_nit, v_end);
-        else
-            disjoint_neighbours.insert(disjoint_neighbours.end(), u_nit, u_end);
-
-        const count u_setsize =
-            static_cast<count>(u_end - adjList.cbegin(u) - common_neighbours.size());
-        const count v_setsize =
-            static_cast<count>(v_end - adjList.cbegin(v) - common_neighbours.size());
-        // v_setsize not necessarily needed
-
-        // Reset fst/snd row
         adjList.resetRow(u);
         adjList.resetRow(v);
 
-        tlx::random_bipartition_shuffle(disjoint_neighbours.begin(), disjoint_neighbours.end(),
-                                        u_setsize, urng);
+        for (auto n : trader.neighborsOfU()) {
+            assert(n != u && n != v);
+            update(u, tu, n);
+        }
 
-        // Assign first u_setsize to u and last v_setsize to v
-        // if not existent then max value, and below compare goes in favor of
-        // partner, if partner has no more neighbours as well then their values are
-        // equal (max and equal) and tiebreaking is applied
-        for (count counter = 0; counter < u_setsize; counter++) {
-            const node swapped = disjoint_neighbours[counter];
-            update(u, swapped);
+        for (auto n : trader.neighborsOfV()) {
+            assert(n != u && n != v);
+            update(v, tv, n);
         }
-        for (count counter = u_setsize; counter < u_setsize + v_setsize; counter++) {
-            const node swapped = disjoint_neighbours[counter];
-            update(v, swapped);
+
+        for (auto n : trader.neighborsInCommon()) {
+            assert(n != u && n != v);
+            update(u, tu, n);
+            update(v, tv, n);
         }
-        // Distribute common edges
-        for (const auto common : common_neighbours) {
-            update(u, common);
-            update(v, common);
-        }
-        // Do not forget edge between u and v
-        if (shared)
-            update(u, v);
+
+        if (trader.hasSharedEdge())
+            update(u, tu, v, tv);
 
         trade_count++;
     }

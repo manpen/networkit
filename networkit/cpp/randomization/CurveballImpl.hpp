@@ -13,6 +13,8 @@
 #include <networkit/Globals.hpp>
 #include <networkit/graph/Graph.hpp>
 
+#include <range/v3/view/span.hpp>
+
 namespace NetworKit {
 namespace CurveballDetails {
 
@@ -68,6 +70,16 @@ public:
 
     cneighbour_it cend(node node_id) const {
         return neighbours.cbegin() + begins[node_id] + offsets[node_id];
+    }
+
+    auto range(node node_id) {
+        auto *base = neighbours.data() + begins[node_id];
+        return ranges::make_span(base, base + offsets[node_id]);
+    }
+
+    auto crange(node node_id) const {
+        const auto *base = neighbours.data() + begins[node_id];
+        return ranges::make_span(base, base + offsets[node_id]);
     }
 
     nodepair_vector getEdges() const;
@@ -187,19 +199,26 @@ private:
 
     void restructureGraph(const trade_vector &trades);
 
-    inline void update(node a, node b) {
+    void update(node a, node b) {
         const tradeid ta = *(tradeList.getTrades(a));
+        update(a, ta, b);
+    }
+
+    void update(node a, tradeid ta, node b) {
         const tradeid tb = *(tradeList.getTrades(b));
-        if (ta < tb) {
-            adjList.insertNeighbour(a, b);
-            return;
-        }
+        update(a, ta, b, tb);
+    }
+
+    void update(node a, tradeid ta, node b, tradeid tb) {
+        assert(ta == *(tradeList.getTrades(a)));
+        assert(tb == *(tradeList.getTrades(b)));
 
         if (ta > tb) {
             adjList.insertNeighbour(b, a);
             return;
         }
-        { adjList.insertNeighbour(a, b); }
+
+        adjList.insertNeighbour(a, b);
     }
 };
 
