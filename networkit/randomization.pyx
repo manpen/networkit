@@ -12,6 +12,119 @@ ctypedef index node
 from .base cimport _Algorithm, Algorithm
 from .graph cimport _Graph, Graph
 
+cdef extern from "<networkit/randomization/EdgeSwitching.hpp>":
+	cdef cppclass _EdgeSwitching "NetworKit::EdgeSwitching"(_Algorithm):
+		_EdgeSwitching(_Graph, bool_t) except +
+		void run(count) nogil except +
+		_Graph getGraph() except +
+		count getNumberOfAffectedEdges() except +
+
+	cdef cppclass _EdgeSwitchingInPlace "NetworKit::EdgeSwitchingInPlace"(_Algorithm):
+		_EdgeSwitchingInPlace(_Graph) except +
+		void run(count) nogil except +
+		count getNumberOfAffectedEdges() except +
+
+
+cdef class EdgeSwitching(Algorithm):
+	"""
+	The Edge Switching Markov Chain ["The markov chain simulation method for generating connected
+	power law random graphs", Mihail and Zegura] perturbs simple directed or undirected graphs
+	while preserving their degrees. In each step, we select two edges uniformly at random, and
+	exchange their endpoints. Swaps that introduce multi-edges or self-loops are rejected WITHOUT
+	replacement -- this is necessary to allow uniform sampling [see "Switching edges to randomize
+	networks: what goes wrong and how to fix it", Carstens and Horadam]. The number of successful
+	swaps can be queried using getNumberOfAffectedEdges()/2.
+
+	We provide two implementations: EdgeSwitching takes a copy of the input graph and is more
+	versatile; EdgeSwitchingInPlace works directly on the graph supplied but cannot carry-out
+	an initial degreePreservingShufflePreprocessing.
+
+	In general, simple edge switching does not yield a uniform distribution on simple DIRECTED
+	graphs because the orientation of directed triangles cannot be changed. Using
+	DegreePreservingShuffle as a preprocessing step overcomes this limitation. The
+	preprocessing can also jump-start the perturbation process, yielding to potentially faster
+	mixing. It is performed by default for owned graphs.
+
+	Parameters
+	----------
+	G : networkit.Graph
+		The graph to be randomized.
+
+	degreePreservingShufflePreprocessing: bool
+		If true (default), in a preprocessing step jump starts the perturbation process.
+		For undirected graph, this yields faster mixing; for directed graphs, it is
+		necessary in order to obtain an unbiased sampling.
+	"""
+	cdef count _defaultNumberOfSwaps
+
+	def __cinit__(self, G, degreePreservingShufflePreprocessing = True):
+		if isinstance(G, Graph):
+			self._this = new _EdgeSwitching((<Graph>G)._this, degreePreservingShufflePreprocessing)
+			self._defaultNumberOfSwaps = 10 * G.numberOfEdges()
+		else:
+			raise RuntimeError("Parameter G has to be a graph")
+
+	def run(self, numberOfSwaps = None):
+		"""Perform edge switching. May be called multiple times."""
+		(<_EdgeSwitching*>self._this).run(
+			self._defaultNumberOfSwaps if numberOfSwaps is None else numberOfSwaps)
+
+	def getGraph(self):
+		return Graph().setThis((<_EdgeSwitching*>self._this).getGraph())
+
+	def getNumberOfAffectedEdges(self):
+		return (<_EdgeSwitching*>(self._this)).getNumberOfAffectedEdges()
+
+cdef class EdgeSwitchingInPlace(Algorithm):
+	"""
+	The Edge Switching Markov Chain ["The markov chain simulation method for generating connected
+	power law random graphs", Mihail and Zegura] perturbs simple directed or undirected graphs
+	while preserving their degrees. In each step, we select two edges uniformly at random, and
+	exchange their endpoints. Swaps that introduce multi-edges or self-loops are rejected WITHOUT
+	replacement -- this is necessary to allow uniform sampling [see "Switching edges to randomize
+	networks: what goes wrong and how to fix it", Carstens and Horadam]. The number of successful
+	swaps can be queried using getNumberOfAffectedEdges()/2.
+
+	We provide two implementations: EdgeSwitching takes a copy of the input graph and is more
+	versatile; EdgeSwitchingInPlace works directly on the graph supplied but cannot carry-out
+	an initial degreePreservingShufflePreprocessing.
+
+	In general, simple edge switching does not yield a uniform distribution on simple DIRECTED
+	graphs because the orientation of directed triangles cannot be changed. Using
+	DegreePreservingShuffle as a preprocessing step overcomes this limitation. The
+	preprocessing can also jump-start the perturbation process, yielding to potentially faster
+	mixing. It is only available for EdgeSwitching.
+
+	The implementation keeps a local reference (accessible via getGraph) to prevent premature
+	garbage collection.
+
+	Parameters
+	----------
+	G : networkit.Graph
+		The graph to be randomized.
+	"""
+	cdef count _defaultNumberOfSwaps
+	cdef Graph _localReference # keep reference counter up to prevent GC of graph
+
+	def __cinit__(self, G):
+		if isinstance(G, Graph):
+			self._this = new _EdgeSwitchingInPlace((<Graph>G)._this)
+			self._defaultNumberOfSwaps = 10 * G.numberOfEdges()
+			self._localReference = G
+		else:
+			raise RuntimeError("Parameter G has to be a graph")
+
+	def run(self, numberOfSwaps = None):
+		"""Perform edge switching. May be called multiple times."""
+		(<_EdgeSwitchingInPlace*>self._this).run(
+			self._defaultNumberOfSwaps if numberOfSwaps is None else numberOfSwaps)
+
+	def getGraph(self):
+		return self._localReference
+
+	def getNumberOfAffectedEdges(self):
+		return (<_EdgeSwitching*>(self._this)).getNumberOfAffectedEdges()
+
 cdef extern from "<networkit/randomization/GlobalCurveball.hpp>":
 
 	cdef cppclass _GlobalCurveball "NetworKit::GlobalCurveball"(_Algorithm):
